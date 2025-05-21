@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Invoice } from "@/types/invoice";
@@ -21,9 +22,9 @@ const initialFiltersState: Filters = {
 };
 
 export function InvoiceDashboard({ initialInvoices, error: initialError }: InvoiceDashboardProps) {
-  const [allInvoices, setAllInvoices] = useState<Invoice[]>(initialInvoices);
+  const [allInvoices, setAllInvoices] = useState<Invoice[]>(initialInvoices || []);
   const [filters, setFilters] = useState<Filters>(initialFiltersState);
-  const [isLoading, setIsLoading] = useState<boolean>(false); // For client-side operations if any become async
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | undefined>(initialError);
   const { toast } = useToast();
 
@@ -38,31 +39,37 @@ export function InvoiceDashboard({ initialInvoices, error: initialError }: Invoi
   }, [initialError, toast]);
 
   const handleFilterChange = useCallback((newFilters: Filters) => {
+    setIsLoading(true); // Set loading true when filter operation starts
     setFilters(newFilters);
   }, []);
 
   const handleClearFilters = useCallback(() => {
+    setIsLoading(true); // Set loading true when clear operation starts
     setFilters(initialFiltersState);
   }, []);
 
   const filteredInvoices = useMemo(() => {
-    setIsLoading(true); // Simulate loading for filter application
-    let
-     invoicesToFilter = allInvoices;
+    // Filtering logic is pure; isLoading is handled by event handlers and useEffect
+    let invoicesToFilter = allInvoices;
+
+    if (!Array.isArray(invoicesToFilter)) {
+        // This case should ideally not be hit if initialInvoices is always an array
+        invoicesToFilter = []; 
+    }
 
     if (filters.customerName) {
       const searchTerm = filters.customerName.toLowerCase();
       invoicesToFilter = invoicesToFilter.filter(
         (invoice) =>
-          invoice.ACCNAME.toLowerCase().includes(searchTerm) ||
-          invoice.ACCDES.toLowerCase().includes(searchTerm)
+          (invoice.ACCNAME && invoice.ACCNAME.toLowerCase().includes(searchTerm)) ||
+          (invoice.ACCDES && invoice.ACCDES.toLowerCase().includes(searchTerm))
       );
     }
 
     if (filters.invoiceNumber) {
       const searchTerm = filters.invoiceNumber.toLowerCase();
       invoicesToFilter = invoicesToFilter.filter((invoice) =>
-        invoice.IVNUM.toLowerCase().includes(searchTerm)
+        invoice.IVNUM && invoice.IVNUM.toLowerCase().includes(searchTerm)
       );
     }
 
@@ -70,9 +77,14 @@ export function InvoiceDashboard({ initialInvoices, error: initialError }: Invoi
       const startDateWithoutTime = new Date(filters.startDate.setHours(0,0,0,0));
       invoicesToFilter = invoicesToFilter.filter((invoice) => {
         try {
-          const invoiceCurDate = new Date(invoice.CURDATE.split("T")[0]);
-          return invoiceCurDate >= startDateWithoutTime;
-        } catch { return false; }
+          const invoiceDateStr = invoice.CURDATE?.split("T")[0];
+          if (!invoiceDateStr) return false; // Skip if CURDATE is missing or invalid
+          const invoiceCurDate = new Date(invoiceDateStr);
+          // Check if date is valid before comparison
+          return !isNaN(invoiceCurDate.getTime()) && invoiceCurDate >= startDateWithoutTime;
+        } catch { 
+          return false; 
+        }
       });
     }
     
@@ -80,30 +92,32 @@ export function InvoiceDashboard({ initialInvoices, error: initialError }: Invoi
       const endDateWithoutTime = new Date(filters.endDate.setHours(23,59,59,999));
       invoicesToFilter = invoicesToFilter.filter((invoice) => {
         try {
-          const invoiceCurDate = new Date(invoice.CURDATE.split("T")[0]);
-          return invoiceCurDate <= endDateWithoutTime;
-        } catch { return false; }
+          const invoiceDateStr = invoice.CURDATE?.split("T")[0];
+          if (!invoiceDateStr) return false; // Skip if CURDATE is missing or invalid
+          const invoiceCurDate = new Date(invoiceDateStr);
+          // Check if date is valid before comparison
+          return !isNaN(invoiceCurDate.getTime()) && invoiceCurDate <= endDateWithoutTime;
+        } catch { 
+          return false; 
+        }
       });
     }
     
-    // Simulate a short delay for filter application for UX
-    // In a real app with very large datasets, this could be an actual async operation or debounced
-    const timer = setTimeout(() => setIsLoading(false), 300); 
-    // Clear timeout if component unmounts or dependencies change
-    // This is a simple way to show transition. A more robust way might involve CSS transitions on table rows.
-    return () => clearTimeout(timer);
-
-    // setIsLoading(false); // Set loading false after filtering
-    return invoicesToFilter;
+    return invoicesToFilter; // Correctly return the filtered array
   }, [allInvoices, filters]);
   
-   // Effect to turn off loading after filteredInvoices is computed
+  // Effect to turn off loading after a delay, once filtering is complete and if isLoading is true.
   useEffect(() => {
-    setIsLoading(false);
-  }, [filteredInvoices]);
+    if (isLoading) {
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 300); // Minimum display time for loading spinner
+      return () => clearTimeout(timer); // Cleanup timer if component unmounts or dependencies change
+    }
+  }, [filteredInvoices, isLoading]); // Re-run if filteredInvoices is computed or isLoading changes
 
 
-  if (error && !initialInvoices.length) {
+  if (error && (!allInvoices || allInvoices.length === 0)) {
     return (
       <Alert variant="destructive" className="mt-6">
         <Terminal className="h-4 w-4" />
