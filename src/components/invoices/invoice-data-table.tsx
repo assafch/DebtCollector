@@ -43,38 +43,27 @@ interface InvoiceDataTableProps {
   sortDirection: 'asc' | 'desc';
 }
 
-// Define which columns are for remarks and potentially editable
 interface ColumnDefinition {
-  key: keyof Invoice | keyof InvoiceRemark | string; // Allow custom keys like 'payment_status'
+  key: keyof Invoice | keyof InvoiceRemark | string; 
   label: string;
   isSortable?: boolean;
-  isRemarkField?: boolean; // Flag for remark-related fields
-  className?: string; // Optional class for TableCell
+  isRemarkField?: boolean; 
+  className?: string; 
 }
 
-
-// Original invoice fields + new remark fields
-// Ordered for RTL display (rightmost first)
 const columnConfiguration: ColumnDefinition[] = [
-  // Original Invoice Fields (reversed for RTL)
-  { key: "ACCNAME", label: "שם חשבון", isSortable: true, className: "min-w-[180px]" },
-  { key: "ACCDES", label: "תיאור חשבון", isSortable: true, className: "min-w-[200px]" },
+  { key: "ACCDES", label: "מ. לקוח", isSortable: true, className: "min-w-[200px]" },
+  { key: "ACCNAME", label: "שם לקוח", isSortable: true, className: "min-w-[180px]" },
   { key: "IVNUM", label: "מספר חשבונית", isSortable: true, className: "min-w-[120px]" },
   { key: "CURDATE", label: "תאריך חשבונית", isSortable: true, className: "min-w-[100px]" },
   { key: "FNCDATE", label: "תאריך פרעון", isSortable: true, className: "min-w-[100px]" },
-  { key: "SUM", label: "סכום", isSortable: true, className: "text-left min-w-[100px]" }, // Numbers typically LTR aligned
+  { key: "SUM", label: "סכום", isSortable: true, className: "text-left min-w-[100px]" }, 
 
-  // New Remark-related Fields
   { key: "payment_status", label: "סטטוס תשלום", isSortable: true, isRemarkField: true, className: "min-w-[180px]" },
   { key: "status_date", label: "תאריך סטטוס", isSortable: true, isRemarkField: true, className: "min-w-[180px]" },
   { key: "text", label: "הערות", isSortable: false, isRemarkField: true, className: "min-w-[250px]" },
   { key: "follow_up_date", label: "תאריך מעקב", isSortable: true, isRemarkField: true, className: "min-w-[180px]" },
   
-  // Other original fields
-  { key: "FNCPATNAME", label: "אמצעי תשלום", isSortable: true, className: "min-w-[100px]" },
-  { key: "INVOICEFLAG", label: "דגל חשבונית", isSortable: true, className: "min-w-[80px]" },
-  { key: "FNCTRANS", label: "מזהה עסקה", isSortable: true, className: "min-w-[100px]" },
-  { key: "KLINE", label: "שורה", isSortable: true, className: "text-left min-w-[60px]" }, // Numbers typically LTR aligned
 ].reverse();
 
 
@@ -100,7 +89,7 @@ export function InvoiceDataTable({
   const handleSaveEdit = async (invoiceId: string, field: string) => {
     if (editingCell && editingCell.invoiceId === invoiceId && editingCell.field === field) {
       let updatePayload: Partial<InvoiceRemark> = { [field]: editValue };
-      if (field === 'status') { // When status changes, also update status_date
+      if (field === 'status') { 
         updatePayload.status_date = formatISO(new Date());
       }
       await onUpdateRemark(invoiceId, updatePayload);
@@ -123,7 +112,7 @@ export function InvoiceDataTable({
   };
   
   const defaultRemark = (invoiceId: string): InvoiceRemark => ({
-    id: invoiceId, // Temp ID, backend might assign real one
+    id: invoiceId, 
     invoiceId,
     status: 'לא שולם',
     createdAt: formatISO(new Date()),
@@ -154,7 +143,7 @@ export function InvoiceDataTable({
                     className={`whitespace-nowrap text-right px-2 py-3 ${col.className || ''} ${col.isSortable ? 'cursor-pointer' : ''}`}
                     onClick={col.isSortable ? () => onSort(col.key) : undefined}
                   >
-                     <div className="flex items-center justify-end rtl:justify-start"> {/* Adjusted for RTL header text */}
+                     <div className="flex items-center justify-end rtl:justify-start"> 
                         <span>{col.label}</span>
                         {col.isSortable && renderSortIcon(col.key)}
                     </div>
@@ -231,8 +220,8 @@ export function InvoiceDataTable({
                                 defaultValue={remark.text || ""}
                                 onBlur={(e) => onUpdateRemark(invoice.IVNUM, { text: e.target.value })}
                                 placeholder="הזן הערה..."
-                                className="min-w-[200px] text-xs h-auto py-1 px-2" // Adjusted for better fit
-                                rows={1} // Start with 1 row, can expand
+                                className="min-w-[200px] text-xs h-auto py-1 px-2" 
+                                rows={1} 
                                 disabled={isUpdatingThisRemark}
                               />
                             );
@@ -259,15 +248,14 @@ export function InvoiceDataTable({
                             displayData = formatDateString(cellData as string);
                           } else if (col.key === "SUM") {
                             displayData = typeof cellData === 'number' ? (cellData as number).toLocaleString('he-IL', { style: 'currency', currency: 'ILS', minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "";
-                          } else if (col.key === "INVOICEFLAG") {
-                            displayData = <Badge variant={(cellData as string) === 'Y' ? 'default' : 'secondary'}>{cellData as string}</Badge>;
                           }
+                          // Removed INVOICEFLAG rendering as per request to remove the column
                         }
                         
                         return (
                           <TableCell 
                             key={`${invoice.IVNUM}-${col.key}`}
-                            className={`px-2 py-1.5 ${col.className || ''} ${col.key === "SUM" || col.key === "KLINE" ? "text-left" : "text-right"}`}
+                            className={`px-2 py-1.5 ${col.className || ''} ${col.key === "SUM" ? "text-left" : "text-right"}`}
                           >
                             {displayData}
                           </TableCell>
@@ -283,3 +271,4 @@ export function InvoiceDataTable({
     </Card>
   );
 }
+
