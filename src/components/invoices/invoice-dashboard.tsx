@@ -28,6 +28,11 @@ export function InvoiceDashboard({ initialInvoices, error: initialError }: Invoi
   const [error, setError] = useState<string | undefined>(initialError);
   const { toast } = useToast();
 
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Invoice | string | null; direction: 'asc' | 'desc' }>({
+    key: 'ACCNAME', // Default sort column
+    direction: 'asc',
+  });
+
   useEffect(() => {
     if (initialError) {
       toast({
@@ -39,21 +44,31 @@ export function InvoiceDashboard({ initialInvoices, error: initialError }: Invoi
   }, [initialError, toast]);
 
   const handleFilterChange = useCallback((newFilters: Filters) => {
-    setIsLoading(true); // Set loading true when filter operation starts
+    setIsLoading(true);
     setFilters(newFilters);
   }, []);
 
   const handleClearFilters = useCallback(() => {
-    setIsLoading(true); // Set loading true when clear operation starts
+    setIsLoading(true);
     setFilters(initialFiltersState);
+    setSortConfig({ key: 'ACCNAME', direction: 'asc' }); // Reset sort on clear
+  }, []);
+
+  const handleSort = useCallback((keyToSort: keyof Invoice | string) => {
+    setIsLoading(true);
+    setSortConfig(currentSortConfig => {
+      let direction: 'asc' | 'desc' = 'asc';
+      if (currentSortConfig.key === keyToSort && currentSortConfig.direction === 'asc') {
+        direction = 'desc';
+      }
+      return { key: keyToSort, direction };
+    });
   }, []);
 
   const filteredInvoices = useMemo(() => {
-    // Filtering logic is pure; isLoading is handled by event handlers and useEffect
     let invoicesToFilter = allInvoices;
 
     if (!Array.isArray(invoicesToFilter)) {
-        // This case should ideally not be hit if initialInvoices is always an array
         invoicesToFilter = []; 
     }
 
@@ -78,9 +93,8 @@ export function InvoiceDashboard({ initialInvoices, error: initialError }: Invoi
       invoicesToFilter = invoicesToFilter.filter((invoice) => {
         try {
           const invoiceDateStr = invoice.CURDATE?.split("T")[0];
-          if (!invoiceDateStr) return false; // Skip if CURDATE is missing or invalid
+          if (!invoiceDateStr) return false;
           const invoiceCurDate = new Date(invoiceDateStr);
-          // Check if date is valid before comparison
           return !isNaN(invoiceCurDate.getTime()) && invoiceCurDate >= startDateWithoutTime;
         } catch { 
           return false; 
@@ -93,9 +107,8 @@ export function InvoiceDashboard({ initialInvoices, error: initialError }: Invoi
       invoicesToFilter = invoicesToFilter.filter((invoice) => {
         try {
           const invoiceDateStr = invoice.CURDATE?.split("T")[0];
-          if (!invoiceDateStr) return false; // Skip if CURDATE is missing or invalid
+          if (!invoiceDateStr) return false;
           const invoiceCurDate = new Date(invoiceDateStr);
-          // Check if date is valid before comparison
           return !isNaN(invoiceCurDate.getTime()) && invoiceCurDate <= endDateWithoutTime;
         } catch { 
           return false; 
@@ -103,18 +116,55 @@ export function InvoiceDashboard({ initialInvoices, error: initialError }: Invoi
       });
     }
     
-    return invoicesToFilter; // Correctly return the filtered array
+    return invoicesToFilter;
   }, [allInvoices, filters]);
+
+  const sortedAndFilteredInvoices = useMemo(() => {
+    if (!sortConfig.key) {
+      return filteredInvoices;
+    }
+
+    const sortableInvoices = [...filteredInvoices];
+
+    sortableInvoices.sort((a, b) => {
+      const aValue = a[sortConfig.key as keyof Invoice];
+      const bValue = b[sortConfig.key as keyof Invoice];
+      let comparison = 0;
+
+      // Handle null or undefined values by pushing them to the end for asc, beginning for desc
+      if (aValue === null || aValue === undefined) comparison = 1;
+      else if (bValue === null || bValue === undefined) comparison = -1;
+      else if (typeof aValue === 'number' && typeof bValue === 'number') {
+        comparison = aValue - bValue;
+      } else if (typeof aValue === 'string' && typeof bValue === 'string') {
+        if (sortConfig.key === 'CURDATE' || sortConfig.key === 'FNCDATE') {
+          const dateA = new Date(aValue.split("T")[0] || 0).getTime();
+          const dateB = new Date(bValue.split("T")[0] || 0).getTime();
+          if (isNaN(dateA) && isNaN(dateB)) comparison = 0;
+          else if (isNaN(dateA)) comparison = 1; // Push NaN to end
+          else if (isNaN(dateB)) comparison = -1; // Push NaN to end
+          else comparison = dateA - dateB;
+        } else {
+          comparison = aValue.localeCompare(bValue, undefined, { numeric: true, sensitivity: 'base' });
+        }
+      } else {
+        // Fallback for mixed types or other types
+        comparison = String(aValue).localeCompare(String(bValue), undefined, { numeric: true, sensitivity: 'base' });
+      }
+      
+      return sortConfig.direction === 'asc' ? comparison : -comparison;
+    });
+    return sortableInvoices;
+  }, [filteredInvoices, sortConfig]);
   
-  // Effect to turn off loading after a delay, once filtering is complete and if isLoading is true.
   useEffect(() => {
     if (isLoading) {
       const timer = setTimeout(() => {
         setIsLoading(false);
-      }, 300); // Minimum display time for loading spinner
-      return () => clearTimeout(timer); // Cleanup timer if component unmounts or dependencies change
+      }, 300);
+      return () => clearTimeout(timer);
     }
-  }, [filteredInvoices, isLoading]); // Re-run if filteredInvoices is computed or isLoading changes
+  }, [sortedAndFilteredInvoices, isLoading]);
 
 
   if (error && (!allInvoices || allInvoices.length === 0)) {
@@ -135,7 +185,13 @@ export function InvoiceDashboard({ initialInvoices, error: initialError }: Invoi
         onClearFilters={handleClearFilters}
         isLoading={isLoading}
       />
-      <InvoiceDataTable invoices={filteredInvoices} isLoading={isLoading} />
+      <InvoiceDataTable 
+        invoices={sortedAndFilteredInvoices} 
+        isLoading={isLoading}
+        onSort={handleSort}
+        sortKey={sortConfig.key}
+        sortDirection={sortConfig.direction}
+      />
     </div>
   );
 }
