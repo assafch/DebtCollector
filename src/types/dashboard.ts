@@ -1,12 +1,41 @@
+
 import type { LucideIcon } from 'lucide-react';
 import type { Invoice } from './invoice';
 
+// Defines the possible payment statuses for an invoice remark
+export type PaymentStatus = 'שולם' | 'לא שולם' | 'שולם חלקית' | 'בוטל' | 'בתהליך גבייה';
+
+// Represents an option for the payment status, used in Select components and filters
+export interface PaymentStatusOption {
+  value: PaymentStatus;
+  label: string;
+  // Defines the visual style for badges or other UI elements representing the status
+  badgeVariant: "default" | "secondary" | "destructive" | "outline";
+  // Optional icon for the status, e.g., for display in a Select component
+  icon?: React.ElementType; 
+}
+
+// Readonly array of available payment status options
+// Used to populate dropdowns and for consistent status representation
+export const PAYMENT_STATUS_OPTIONS: readonly PaymentStatusOption[] = [
+  { value: 'לא שולם', label: 'לא שולם', badgeVariant: 'destructive' },
+  { value: 'בתהליך גבייה', label: 'בתהליך גבייה', badgeVariant: 'outline' },
+  { value: 'שולם חלקית', label: 'שולם חלקית', badgeVariant: 'default' }, // 'default' often implies primary/accent color
+  { value: 'שולם', label: 'שולם', badgeVariant: 'default' }, // Typically a success-like style
+  { value: 'בוטל', label: 'בוטל', badgeVariant: 'secondary' },
+] as const;
+
+// Represents a remark or status update associated with an invoice
 export interface InvoiceRemark {
-  id: string;
-  invoiceId: string; // Corresponds to Invoice.IVNUM
-  status: 'שולם' | 'לא שולם' | 'שולם חלקית' | 'בוטל';
-  text?: string;
-  createdAt: string; // ISO Date string, e.g., "2023-10-27T10:00:00Z"
+  id: string; // Unique identifier for the remark; can be invoice.IVNUM if one main remark per invoice
+  invoiceId: string; // Corresponds to Invoice.IVNUM, linking the remark to an invoice
+  status: PaymentStatus; // The current payment status of the invoice
+  text?: string; // Free-form textual notes or comments about the invoice/payment
+  createdAt: string; // ISO Date string: When the remark was initially created
+  status_date?: string; // ISO Date string: When the current 'status' was set
+  follow_up_date?: string; // ISO Date string: Optional date for follow-up actions
+  // updatedBy?: string; // Optional: Identifier for the user who made the last update
+  // updatedAt?: string; // Optional: ISO Date string for when the remark was last updated
 }
 
 export interface ErpConfig {
@@ -51,7 +80,7 @@ export interface ActivityItem {
 // Helper types for dashboard calculations
 export interface ProcessedInvoices {
   allInvoices: Invoice[];
-  remarksMap: Map<string, InvoiceRemark[]>;
+  remarksMap: Map<string, InvoiceRemark[]>; // Changed from Map<string, InvoiceRemark> for dashboard
   erpConfig?: ErpConfig;
   isLoading: boolean;
   error?: string;

@@ -2,8 +2,8 @@
 "use server";
 
 import type { Invoice, PriorityApiResponse, FetchInvoicesResult } from "@/types/invoice";
-import type { InvoiceRemark, ErpConfig } from "@/types/dashboard";
-import { addDays, formatISO } from 'date-fns';
+import type { InvoiceRemark, ErpConfig, PaymentStatus } from "@/types/dashboard";
+import { addDays, formatISO, subDays } from 'date-fns';
 
 const API_URL = 'https://p.priority-connect.online/odata/Priority/tabp008h.ini/a051014/TFNCITEMS2ONE';
 // IMPORTANT: In a real application, this key should come from environment variables.
@@ -59,50 +59,94 @@ export async function fetchOpenInvoicesAction(): Promise<FetchInvoicesResult> {
   }
 }
 
+// Ensures that every invoice has a corresponding remark, creating a default if one doesn't exist.
 export async function fetchInvoiceRemarksAction(invoices: Invoice[]): Promise<{ data?: InvoiceRemark[]; error?: string }> {
-  // MOCK IMPLEMENTATION
-  // In a real app, this would fetch from an API or database
-  console.log("Fetching mock invoice remarks...");
+  console.log("Fetching/Generating mock invoice remarks for supplied invoices...");
   await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
 
-  if (!invoices || invoices.length === 0) {
+  if (!invoices) {
     return { data: [] };
   }
 
   const today = new Date();
-  const remarks: InvoiceRemark[] = invoices.slice(0, 15).map((invoice, index) => {
-    let status: InvoiceRemark['status'] = 'לא שולם';
+  const allRemarks: InvoiceRemark[] = invoices.map((invoice, index) => {
+    // Simulate some invoices not having pre-existing remarks to test default creation logic
+    // For this mock, let's say 1 in 4 invoices initially might not have a remark from a "backend"
+    // and would get a default one generated here.
+    // In a real scenario, you'd query your remarks data source.
+
+    let status: PaymentStatus = 'לא שולם';
     let text: string | undefined = undefined;
     const daysAgo = Math.floor(Math.random() * 30); // remarks from last 30 days
-    
-    const remarkDate = addDays(today, -daysAgo);
+    const remarkDate = subDays(today, daysAgo); // Use subDays for past dates
+    let statusDate = remarkDate;
 
-    if (index % 5 === 0) {
+    // Mock existing remarks for some invoices
+    if (index % 7 === 0 && index > 0) { // Some paid
       status = 'שולם';
       text = 'התשלום התקבל במלואו, תודה.';
-    } else if (index % 5 === 1 && invoice.SUM > 1000) {
+      statusDate = subDays(today, Math.floor(Math.random() * 5)); // Paid recently
+    } else if (index % 7 === 1 && invoice.SUM > 1000 && index > 0) { // Some partially paid
       status = 'שולם חלקית';
       text = `שולם ${Math.floor(invoice.SUM / 2)}₪. יתרה לתשלום.`;
-    } else if (index % 5 === 2) {
+      statusDate = subDays(today, Math.floor(Math.random() * 10));
+    } else if (index % 7 === 2 && index > 0) { // Some with notes but unpaid
        status = 'לא שולם';
        text = 'ממתין לתשלום מהלקוח.';
-    } else if (index % 5 === 3 && index < 5) {
+    } else if (index % 7 === 3 && index < 10 && index > 0) { // Some cancelled
         status = 'בוטל';
         text = 'החשבונית בוטלה לבקשת הלקוח.';
+        statusDate = subDays(today, Math.floor(Math.random() * 15));
+    } else if (index % 7 === 4 && index > 0) { // Some in collection process
+        status = 'בתהליך גבייה';
+        text = 'נשלחה תזכורת לתשלום.';
+        statusDate = subDays(today, Math.floor(Math.random() * 3));
     }
-    // else default 'לא שולם' without text
+    // For other invoices, they will default to 'לא שולם' with no text,
+    // and createdAt/status_date as `remarkDate`.
 
     return {
-      id: `remark-${invoice.IVNUM}-${index}`,
+      id: `remark-${invoice.IVNUM}-${index}`, // Ensure unique ID for mock
       invoiceId: invoice.IVNUM,
       status,
       text: text,
       createdAt: formatISO(remarkDate),
+      status_date: formatISO(statusDate), // Initialize status_date
+      // follow_up_date: can be added here if needed for mock
     };
   });
 
-  return { data: remarks };
+  return { data: allRemarks };
 }
+
+
+export async function updateInvoiceRemarkAction(invoiceId: string, updates: Partial<InvoiceRemark>): Promise<{ data?: InvoiceRemark; error?: string }> {
+  console.log(`MOCK: Updating remark for invoice ${invoiceId} with`, updates);
+  await new Promise(resolve => setTimeout(resolve, 700)); // Simulate network delay
+
+  // In a real app, you would fetch the existing remark, apply updates, and save to DB.
+  // For this mock, we'll just return an object that merges a basic structure with updates.
+  
+  // Simulate potential error
+  // if (Math.random() < 0.1) { // 10% chance of error
+  //   console.error(`MOCK: Error updating remark for invoice ${invoiceId}`);
+  //   return { error: "שגיאה בעדכון ההערה. נסה שוב." };
+  // }
+
+  const updatedRemark: InvoiceRemark = {
+    id: updates.id || `remark-${invoiceId}-updated`, // Use existing id or generate
+    invoiceId: invoiceId,
+    status: updates.status || 'לא שולם', // Default if not provided
+    text: updates.text,
+    createdAt: updates.createdAt || formatISO(new Date()), // Use existing or new
+    status_date: updates.status_date || formatISO(new Date()),
+    follow_up_date: updates.follow_up_date,
+  };
+  
+  console.log(`MOCK: Successfully updated remark for invoice ${invoiceId}`);
+  return { data: updatedRemark };
+}
+
 
 export async function fetchErpConfigAction(): Promise<{ data?: ErpConfig; error?: string }> {
   // MOCK IMPLEMENTATION
