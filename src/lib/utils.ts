@@ -19,3 +19,7 @@ export function formatDateString(dateString?: string | null): string {
     return dateString; // Return original on error
   }
 }
+
+export function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
+}

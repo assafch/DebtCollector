@@ -2,6 +2,7 @@
 "use server";
 
 import type { Invoice, PriorityApiResponse, FetchInvoicesResult } from "@/types/invoice";
+import type { Customer, FetchCustomersResult } from "@/types/customer"; // Added Customer types
 import type { InvoiceRemark, ErpConfig, PaymentStatus } from "@/types/dashboard";
 import { addDays, formatISO, subDays } from 'date-fns';
 
@@ -155,6 +156,41 @@ export async function fetchErpConfigAction(): Promise<{ data?: ErpConfig; error?
   return { data: { refreshInterval: 60000 } }; // e.g., refresh every 60 seconds
 }
 
+export async function fetchCustomersAction(): Promise<FetchCustomersResult> {
+  console.log("Fetching mock customer data...");
+  await new Promise(resolve => setTimeout(resolve, 300)); // Simulate network delay
+
+  // For this mock, we'll try to derive some customer data from a pre-fetched invoice list
+  // to ensure some consistency for the Customers page demo.
+  // In a real app, this would query the CUSTOMERS table from Priority.
+  const invoiceResult = await fetchOpenInvoicesAction();
+  if (invoiceResult.error || !invoiceResult.data) {
+    return { error: "Could not fetch underlying invoice data to mock customers." };
+  }
+
+  const invoices = invoiceResult.data;
+  const customerMap = new Map<string, Customer>();
+
+  invoices.forEach((invoice, index) => {
+    if (!customerMap.has(invoice.ACCDES)) { // Use ACCDES as the unique customer name key
+      customerMap.set(invoice.ACCDES, {
+        id: invoice.ACCDES, // Using ACCDES as a unique ID for mock
+        name: invoice.ACCDES, // CUSTOMERS.NAME
+        customer_id: invoice.ACCNAME, // CUSTOMERS.CUSTNAME
+        phone: `05${index % 10}-12345${index % 10}${index % 10}`, // Mock phone
+        email: `${invoice.ACCNAME.toLowerCase().replace(/\s+/g, '.')}@example.com`, // Mock email
+        contact_person: `איש קשר ${index + 1}`, // Mock contact
+        payment_terms: (index % 3 === 0) ? 'שוטף +30' : (index % 3 === 1) ? 'שוטף +60' : 'שוטף +90', // Mock terms
+        address: `רחוב הדוגמה ${index + 1}, עיר הדוגמה, 12345, ישראל`, // Mock address
+      });
+    }
+  });
+
+  const customersList = Array.from(customerMap.values());
+  console.log(`Mocked ${customersList.length} customers.`);
+  return { data: customersList };
+}
+
 
 export async function handleLogoutAction() {
   "use server";
@@ -163,3 +199,5 @@ export async function handleLogoutAction() {
   // e.g., clearing cookies, invalidating session, redirecting
   // For this example, it just logs to the server console.
 }
+
+
