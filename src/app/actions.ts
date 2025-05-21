@@ -1,3 +1,4 @@
+
 "use server";
 
 import type { Invoice, PriorityApiResponse, FetchInvoicesResult } from "@/types/invoice";
@@ -60,4 +61,12 @@ export async function fetchOpenInvoicesAction(): Promise<FetchInvoicesResult> {
     console.error('Stack: %s', e.stack);
     return { error: `Failed to fetch or process invoice data: ${e.message}. Check server logs.` };
   }
+}
+
+export async function handleLogoutAction() {
+  "use server";
+  console.log("Logout action triggered (Server Action from actions.ts)");
+  // Add actual server-side logout logic here
+  // e.g., clearing cookies, invalidating session, redirecting
+  // For this example, it just logs to the server console.
 }

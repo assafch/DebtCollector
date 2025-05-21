@@ -1,12 +1,13 @@
 
 import { ResponsiveAppLayout } from "@/components/layout/responsive-app-layout";
+import { InvoiceDashboard } from "@/components/invoices/invoice-dashboard";
+import { fetchOpenInvoicesAction, handleLogoutAction } from "../actions"; // Import actions
 import type { Metadata } from 'next';
 import type { MenuItemType } from '@/types/layout';
-import { handleLogoutAction } from "./actions"; // Import the centralized logout action
 
 export const metadata: Metadata = {
-  title: 'Dashboard | Priority Connect',
-  description: 'Main dashboard for Priority Connect.',
+  title: 'Invoices | Priority Connect',
+  description: 'View and filter open invoices from the Priority API.',
 };
 
 const menuItems: MenuItemType[] = [
@@ -17,7 +18,9 @@ const menuItems: MenuItemType[] = [
   { name: 'Settings', iconName: 'SettingsIcon', path: '/settings' },
 ];
 
-export default async function DashboardPage() {
+export default async function InvoicesPage() {
+  const { data: initialInvoices, error } = await fetchOpenInvoicesAction();
+
   return (
     <ResponsiveAppLayout 
       menuItems={menuItems} 
@@ -25,11 +28,7 @@ export default async function DashboardPage() {
       appName="Priority Connect"
       logoSrc="https://placehold.co/64x64.png"
     >
-      <div className="container mx-auto py-10">
-        <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
-        <p className="text-lg">Welcome to the Priority Connect application dashboard.</p>
-        {/* Add dashboard-specific components and content here */}
-      </div>
+      <InvoiceDashboard initialInvoices={initialInvoices || []} error={error} />
     </ResponsiveAppLayout>
   );
 }

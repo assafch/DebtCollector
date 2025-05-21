@@ -2,11 +2,11 @@
 import { ResponsiveAppLayout } from "@/components/layout/responsive-app-layout";
 import type { Metadata } from 'next';
 import type { MenuItemType } from '@/types/layout';
-import { handleLogoutAction } from "./actions"; // Import the centralized logout action
+import { handleLogoutAction } from "../actions";
 
 export const metadata: Metadata = {
-  title: 'Dashboard | Priority Connect',
-  description: 'Main dashboard for Priority Connect.',
+  title: 'Settings | Priority Connect',
+  description: 'Configure application settings.',
 };
 
 const menuItems: MenuItemType[] = [
@@ -17,7 +17,7 @@ const menuItems: MenuItemType[] = [
   { name: 'Settings', iconName: 'SettingsIcon', path: '/settings' },
 ];
 
-export default async function DashboardPage() {
+export default function SettingsPage() {
   return (
     <ResponsiveAppLayout 
       menuItems={menuItems} 
@@ -26,9 +26,9 @@ export default async function DashboardPage() {
       logoSrc="https://placehold.co/64x64.png"
     >
       <div className="container mx-auto py-10">
-        <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
-        <p className="text-lg">Welcome to the Priority Connect application dashboard.</p>
-        {/* Add dashboard-specific components and content here */}
+        <h1 className="text-3xl font-bold mb-6">Settings Page</h1>
+        <p className="text-lg">This is placeholder content for the Settings page.</p>
+        {/* Add settings-specific components and content here */}
       </div>
     </ResponsiveAppLayout>
   );
