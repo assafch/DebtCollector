@@ -57,7 +57,7 @@ const columnConfiguration: ColumnDefinition[] = [
   { key: "IVNUM", label: "מספר חשבונית", isSortable: true, className: "min-w-[120px]" },
   { key: "CURDATE", label: "תאריך חשבונית", isSortable: true, className: "min-w-[100px]" },
   { key: "FNCDATE", label: "תאריך פרעון", isSortable: true, className: "min-w-[100px]" },
-  { key: "SUM", label: "סכום", isSortable: true, className: "text-left min-w-[100px]" }, 
+  { key: "SUM", label: "סכום", isSortable: true, className: "min-w-[100px]" }, 
 
   { key: "payment_status", label: "סטטוס תשלום", isSortable: true, isRemarkField: true, className: "min-w-[180px]" },
   { key: "status_date", label: "תאריך סטטוס", isSortable: true, isRemarkField: true, className: "min-w-[180px]" },
@@ -220,7 +220,7 @@ export function InvoiceDataTable({
                                 defaultValue={remark.text || ""}
                                 onBlur={(e) => onUpdateRemark(invoice.IVNUM, { text: e.target.value })}
                                 placeholder="הזן הערה..."
-                                className="min-w-[200px] text-xs h-auto py-1 px-2" 
+                                className="min-w-[200px] text-xs h-auto py-1 px-2 text-right" 
                                 rows={1} 
                                 disabled={isUpdatingThisRemark}
                               />
@@ -249,13 +249,12 @@ export function InvoiceDataTable({
                           } else if (col.key === "SUM") {
                             displayData = typeof cellData === 'number' ? (cellData as number).toLocaleString('he-IL', { style: 'currency', currency: 'ILS', minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "";
                           }
-                          // Removed INVOICEFLAG rendering as per request to remove the column
                         }
                         
                         return (
                           <TableCell 
                             key={`${invoice.IVNUM}-${col.key}`}
-                            className={`px-2 py-1.5 ${col.className || ''} ${col.key === "SUM" ? "text-left" : "text-right"}`}
+                            className={`px-2 py-1.5 text-right ${col.className || ''}`}
                           >
                             {displayData}
                           </TableCell>
@@ -271,4 +270,3 @@ export function InvoiceDataTable({
     </Card>
   );
 }
-
