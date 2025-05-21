@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Invoice } from "@/types/invoice";
@@ -21,18 +22,19 @@ interface InvoiceDataTableProps {
   isLoading: boolean;
 }
 
-const columnHeaders = [
-  { key: "ACCNAME", label: "Account Name" },
-  { key: "ACCDES", label: "Description" },
-  { key: "CURDATE", label: "Date" },
-  { key: "FNCDATE", label: "Finance Date" },
-  { key: "IVNUM", label: "Invoice #" },
-  { key: "SUM", label: "Amount" },
-  { key: "FNCPATNAME", label: "Payment Method" },
-  { key: "INVOICEFLAG", label: "Flag" },
-  { key: "FNCTRANS", label: "Transaction ID" },
+// Reversed for RTL display
+const columnHeaders: Array<{ key: keyof Invoice | (string & {}), label: string }> = [
   { key: "KLINE", label: "Line" },
-];
+  { key: "FNCTRANS", label: "Transaction ID" },
+  { key: "INVOICEFLAG", label: "Flag" },
+  { key: "FNCPATNAME", label: "Payment Method" },
+  { key: "SUM", label: "Amount" },
+  { key: "IVNUM", label: "Invoice #" },
+  { key: "FNCDATE", label: "Finance Date" },
+  { key: "CURDATE", label: "Date" },
+  { key: "ACCDES", label: "Description" },
+  { key: "ACCNAME", label: "Account Name" },
+].reverse(); // Ensure Account Name is first (rightmost in RTL)
 
 export function InvoiceDataTable({ invoices, isLoading }: InvoiceDataTableProps) {
   return (
@@ -53,7 +55,9 @@ export function InvoiceDataTable({ invoices, isLoading }: InvoiceDataTableProps)
             <TableHeader className="sticky top-0 bg-secondary z-10">
               <TableRow>
                 {columnHeaders.map((col) => (
-                  <TableHead key={col.key} className="whitespace-nowrap">{col.label}</TableHead>
+                  <TableHead key={col.key} className="whitespace-nowrap text-right"> {/* Added text-right for header */}
+                    {col.label}
+                  </TableHead>
                 ))}
               </TableRow>
             </TableHeader>
@@ -77,16 +81,27 @@ export function InvoiceDataTable({ invoices, isLoading }: InvoiceDataTableProps)
               {!isLoading &&
                 invoices.map((invoice, index) => (
                   <TableRow key={`${invoice.IVNUM}-${invoice.KLINE}-${index}`} className="transition-opacity duration-300 ease-in-out hover:bg-muted/50">
-                    <TableCell className="font-medium whitespace-nowrap">{invoice.ACCNAME}</TableCell>
-                    <TableCell className="whitespace-nowrap">{invoice.ACCDES}</TableCell>
-                    <TableCell className="whitespace-nowrap">{formatDateString(invoice.CURDATE)}</TableCell>
-                    <TableCell className="whitespace-nowrap">{formatDateString(invoice.FNCDATE)}</TableCell>
-                    <TableCell className="whitespace-nowrap">{invoice.IVNUM}</TableCell>
-                    <TableCell className="text-right whitespace-nowrap">{invoice.SUM.toFixed(2)}</TableCell>
-                    <TableCell className="whitespace-nowrap">{invoice.FNCPATNAME}</TableCell>
-                    <TableCell><Badge variant={invoice.INVOICEFLAG === 'Y' ? 'default' : 'secondary'}>{invoice.INVOICEFLAG}</Badge></TableCell>
-                    <TableCell className="whitespace-nowrap">{invoice.FNCTRANS}</TableCell>
-                    <TableCell className="text-right whitespace-nowrap">{invoice.KLINE}</TableCell>
+                    {columnHeaders.map((col) => {
+                      const cellData = invoice[col.key as keyof Invoice];
+                      let displayData: React.ReactNode = cellData;
+
+                      if (col.key === "CURDATE" || col.key === "FNCDATE") {
+                        displayData = formatDateString(cellData as string);
+                      } else if (col.key === "SUM") {
+                        displayData = (cellData as number).toFixed(2);
+                      } else if (col.key === "INVOICEFLAG") {
+                        displayData = <Badge variant={(cellData as string) === 'Y' ? 'default' : 'secondary'}>{cellData as string}</Badge>;
+                      }
+                      
+                      return (
+                        <TableCell 
+                          key={col.key} 
+                          className={`whitespace-nowrap ${col.key === "SUM" || col.key === "KLINE" ? "text-left" : "text-right"}`} // Align numbers to left in RTL, others to right
+                        >
+                          {displayData}
+                        </TableCell>
+                      );
+                    })}
                   </TableRow>
                 ))}
             </TableBody>
