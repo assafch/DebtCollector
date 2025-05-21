@@ -10,17 +10,12 @@ import {
   fetchInvoiceRemarksAction,
   updateInvoiceRemarkAction 
 } from "../actions";
-import type { Metadata } from 'next';
 import type { MenuItemType } from '@/types/layout';
 import type { Invoice } from '@/types/invoice';
 import type { InvoiceRemark } from '@/types/dashboard';
 import { useToast } from "@/hooks/use-toast";
 import { formatISO } from 'date-fns';
-
-// export const metadata: Metadata = { // Metadata should be defined in Server Components or layout.tsx
-//   title: 'Invoices | Priority Connect',
-//   description: 'View, filter, and manage invoices and remarks.',
-// };
+import { LoadingStatusDialog } from '@/components/layout/loading-status-dialog';
 
 const menuItems: MenuItemType[] = [
   { name: 'Dashboard', iconName: 'LayoutDashboard', path: '/' },
@@ -33,20 +28,40 @@ const menuItems: MenuItemType[] = [
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [remarksMap, setRemarksMap] = useState<Map<string, InvoiceRemark>>(new Map());
-  const [isLoading, setIsLoading] = useState(true);
+  
+  const [loadingProgress, setLoadingProgress] = useState<{
+    active: boolean;
+    message: string;
+    progressVal: number;
+  }>({ active: true, message: 'מתחיל טעינה...', progressVal: 0 }); // Start active
+
   const [pageError, setPageError] = useState<string | undefined>(undefined);
-  const [updatingRemarks, setUpdatingRemarks] = useState<Set<string>>(new Set()); // Tracks IVNUMs of remarks being updated
+  const [updatingRemarks, setUpdatingRemarks] = useState<Set<string>>(new Set());
 
   const { toast } = useToast();
 
-  const loadInitialData = useCallback(async () => {
-    setIsLoading(true);
+  const loadInitialData = useCallback(async (isManualRefresh = false) => {
+    if (!isManualRefresh) {
+      setLoadingProgress({ active: true, message: 'טוען חשבוניות מהשרת...', progressVal: 10 });
+    } else {
+      // For manual refresh, we might not want the full modal, but a smaller indicator.
+      // For now, manual refresh will also use the modal if it's quick.
+      // Or, we can set a flag here to show a different type of loading for refresh.
+      setLoadingProgress({ active: true, message: 'מרענן נתונים...', progressVal: 10 });
+    }
     setPageError(undefined);
+
     try {
       const invoicesResult = await fetchOpenInvoicesAction();
       if (invoicesResult.error) throw new Error(invoicesResult.error);
       const fetchedInvoices = invoicesResult.data || [];
       setInvoices(fetchedInvoices);
+
+      if (!isManualRefresh) {
+        setLoadingProgress(prev => ({ ...prev, message: 'מעבד הערות ותזכורות...', progressVal: 50 }));
+      } else {
+        setLoadingProgress(prev => ({ ...prev, message: 'מעדכן הערות...', progressVal: 50 }));
+      }
 
       if (fetchedInvoices.length > 0) {
         const remarksResult = await fetchInvoiceRemarksAction(fetchedInvoices);
@@ -61,6 +76,13 @@ export default function InvoicesPage() {
         setRemarksMap(new Map());
       }
 
+      setLoadingProgress({ active: true, message: 'סיום טעינה!', progressVal: 100 });
+      setTimeout(() => setLoadingProgress({ active: false, message: '', progressVal: 0 }), 700);
+      
+      if (isManualRefresh) {
+        toast({ title: "מידע התרענן", description: "נתוני החשבוניות עודכנו."});
+      }
+
     } catch (e: any) {
       console.error("Error loading invoices page data:", e);
       setPageError(e.message || "Failed to load invoice data.");
@@ -69,17 +91,16 @@ export default function InvoicesPage() {
         title: "Error loading data",
         description: e.message || "Could not fetch invoice details.",
       });
-    } finally {
-      setIsLoading(false);
+      setLoadingProgress({ active: false, message: '', progressVal: 0 });
     }
   }, [toast]);
 
   useEffect(() => {
-    loadInitialData();
+    loadInitialData(false); // Initial fetch
   }, [loadInitialData]);
 
   const handleRefreshData = () => {
-    loadInitialData();
+    loadInitialData(true); // Manual refresh
   };
 
   const handleUpdateRemark = useCallback(async (invoiceId: string, updates: Partial<Omit<InvoiceRemark, 'id' | 'invoiceId'>>) => {
@@ -87,16 +108,15 @@ export default function InvoicesPage() {
     
     const currentRemark = remarksMap.get(invoiceId);
     const remarkToUpdate: InvoiceRemark = {
-      id: currentRemark?.id || invoiceId, // Use existing ID or IVNUM if new
+      id: currentRemark?.id || invoiceId, 
       invoiceId: invoiceId,
       status: currentRemark?.status || 'לא שולם',
       createdAt: currentRemark?.createdAt || formatISO(new Date()),
       text: currentRemark?.text,
-      status_date: currentRemark?.status_date || formatISO(new Date()), // Ensure status_date is set
+      status_date: currentRemark?.status_date || formatISO(new Date()),
       ...updates,
     };
 
-    // Optimistic update
     const newRemarksMap = new Map(remarksMap);
     newRemarksMap.set(invoiceId, remarkToUpdate);
     setRemarksMap(newRemarksMap);
@@ -106,7 +126,6 @@ export default function InvoicesPage() {
       if (result.error || !result.data) {
         throw new Error(result.error || "Failed to save remark.");
       }
-      // Update with confirmed data from server (if different, e.g., new ID or server-generated fields)
       setRemarksMap(prevMap => {
         const confirmedMap = new Map(prevMap);
         confirmedMap.set(invoiceId, result.data!);
@@ -117,14 +136,11 @@ export default function InvoicesPage() {
         description: `ההערה לחשבונית ${invoiceId} נשמרה בהצלחה.`,
       });
     } catch (e: any) {
-      // Revert optimistic update on error
       setRemarksMap(prevMap => {
         const revertedMap = new Map(prevMap);
         if (currentRemark) {
           revertedMap.set(invoiceId, currentRemark);
         } else {
-          // If it was a new remark that failed to save, consider removing it or marking as error
-          // For simplicity, we revert to the an empty-ish default or remove if this was an "ensure" case
            const defaultRemark: InvoiceRemark = {
             id: invoiceId, invoiceId, status: 'לא שולם', createdAt: formatISO(new Date()), status_date: formatISO(new Date())
           };
@@ -146,6 +162,12 @@ export default function InvoicesPage() {
     }
   }, [remarksMap, toast]);
   
+  // Determine if the main content should be rendered or if the page is in an error state without data
+  const showContent = !pageError || invoices.length > 0;
+  // The page is effectively loading if the progress dialog is active OR if there's no error yet and no invoices loaded.
+  const isPageLoading = loadingProgress.active || (!pageError && invoices.length === 0 && !loadingProgress.active);
+
+
   return (
     <ResponsiveAppLayout 
       menuItems={menuItems} 
@@ -154,15 +176,35 @@ export default function InvoicesPage() {
       logoSrc="https://placehold.co/64x64.png"
       data-ai-hint="logo abstract"
     >
-      <InvoiceDashboard 
-        initialInvoices={invoices} 
-        remarksMap={remarksMap}
-        onUpdateRemark={handleUpdateRemark}
-        updatingRemarksIvs={updatingRemarks}
-        error={pageError} 
-        onRefreshData={handleRefreshData}
-        isLoading={isLoading}
+      <LoadingStatusDialog 
+        isOpen={loadingProgress.active} 
+        title="טוען נתוני חשבוניות" 
+        description={loadingProgress.message} 
+        progress={loadingProgress.progressVal} 
       />
+      {showContent && (
+        <InvoiceDashboard 
+          initialInvoices={invoices} 
+          remarksMap={remarksMap}
+          onUpdateRemark={handleUpdateRemark}
+          updatingRemarksIvs={updatingRemarks}
+          error={pageError} 
+          onRefreshData={handleRefreshData}
+          isLoading={isPageLoading} // This isLoading is for the InvoiceDashboard's internal loading state (e.g. during filtering)
+        />
+      )}
+      {!showContent && pageError && ( // Only show page-level error if content can't be displayed
+         <div className="container mx-auto py-10">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>שגיאה בטעינת הדף</AlertTitle>
+              <AlertDescription>
+                {pageError}
+                <Button onClick={handleRefreshData} variant="link" className="p-0 h-auto ml-2 rtl:mr-2 rtl:ml-0">נסה שוב</Button>
+              </AlertDescription>
+            </Alert>
+        </div>
+      )}
     </ResponsiveAppLayout>
   );
 }
