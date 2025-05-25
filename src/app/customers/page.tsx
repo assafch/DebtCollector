@@ -41,7 +41,7 @@ export default function CustomersPage() {
   const [remarksMap, setRemarksMap] = useState<Map<string, InvoiceRemark>>(new Map());
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isLoading, setIsLoading] = useState<boolean>(true); // Start with true for initial load
+  const [isLoading, setIsLoading] = useState<boolean>(true); 
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -93,7 +93,8 @@ export default function CustomersPage() {
 
   useEffect(() => {
     loadData(false); // Initial load
-  }, [loadData]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array ensures this runs only once on mount
 
   const handleRefreshData = () => {
     loadData(true); // Manual refresh
@@ -304,7 +305,7 @@ export default function CustomersPage() {
                           selectedCustomerInvoices.map(invoice => {
                             const remark = remarksMap.get(invoice.IVNUM);
                             const status = remark?.status || 'לא שולם';
-                            if (status === 'שולם' || status === 'בוטל') return null; // Show only open invoices
+                            if (status === 'שולם' || status === 'בוטל') return null; 
                             return (
                               <TableRow key={invoice.IVNUM}>
                                 <TableCell className="text-right">{invoice.IVNUM}</TableCell>
@@ -318,7 +319,7 @@ export default function CustomersPage() {
                                 </TableCell>
                               </TableRow>
                             );
-                          }).filter(Boolean) // Remove nulls from filtered out paid/cancelled invoices
+                          }).filter(Boolean) 
                         ) : (
                           <TableRow>
                             <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
@@ -357,4 +358,3 @@ export default function CustomersPage() {
     </ResponsiveAppLayout>
   );
 }
-

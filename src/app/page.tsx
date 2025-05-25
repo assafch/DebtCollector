@@ -122,7 +122,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchData(false); // Initial fetch
-  }, [fetchData]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array ensures this runs only once on mount
 
   const handleRefreshData = () => {
     fetchData(true); // Manual refresh

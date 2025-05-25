@@ -16,6 +16,9 @@ import type { InvoiceRemark } from '@/types/dashboard';
 import { useToast } from "@/hooks/use-toast";
 import { formatISO } from 'date-fns';
 import { LoadingStatusDialog } from '@/components/layout/loading-status-dialog';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'; // Added
+import { Button } from '@/components/ui/button'; // Added
+import { AlertCircle } from 'lucide-react'; // Added
 
 const menuItems: MenuItemType[] = [
   { name: 'Dashboard', iconName: 'LayoutDashboard', path: '/' },
@@ -33,7 +36,7 @@ export default function InvoicesPage() {
     active: boolean;
     message: string;
     progressVal: number;
-  }>({ active: true, message: 'מתחיל טעינה...', progressVal: 0 }); // Start active
+  }>({ active: true, message: 'מתחיל טעינה...', progressVal: 0 }); 
 
   const [pageError, setPageError] = useState<string | undefined>(undefined);
   const [updatingRemarks, setUpdatingRemarks] = useState<Set<string>>(new Set());
@@ -44,9 +47,6 @@ export default function InvoicesPage() {
     if (!isManualRefresh) {
       setLoadingProgress({ active: true, message: 'טוען חשבוניות מהשרת...', progressVal: 10 });
     } else {
-      // For manual refresh, we might not want the full modal, but a smaller indicator.
-      // For now, manual refresh will also use the modal if it's quick.
-      // Or, we can set a flag here to show a different type of loading for refresh.
       setLoadingProgress({ active: true, message: 'מרענן נתונים...', progressVal: 10 });
     }
     setPageError(undefined);
@@ -85,11 +85,12 @@ export default function InvoicesPage() {
 
     } catch (e: any) {
       console.error("Error loading invoices page data:", e);
-      setPageError(e.message || "Failed to load invoice data.");
+      const errorMessage = e.message || "שגיאה בטעינת נתוני חשבוניות.";
+      setPageError(errorMessage);
       toast({
         variant: "destructive",
-        title: "Error loading data",
-        description: e.message || "Could not fetch invoice details.",
+        title: "שגיאה בטעינה",
+        description: errorMessage,
       });
       setLoadingProgress({ active: false, message: '', progressVal: 0 });
     }
@@ -97,7 +98,8 @@ export default function InvoicesPage() {
 
   useEffect(() => {
     loadInitialData(false); // Initial fetch
-  }, [loadInitialData]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array ensures this runs only once on mount
 
   const handleRefreshData = () => {
     loadInitialData(true); // Manual refresh
@@ -162,9 +164,7 @@ export default function InvoicesPage() {
     }
   }, [remarksMap, toast]);
   
-  // Determine if the main content should be rendered or if the page is in an error state without data
   const showContent = !pageError || invoices.length > 0;
-  // The page is effectively loading if the progress dialog is active OR if there's no error yet and no invoices loaded.
   const isPageLoading = loadingProgress.active || (!pageError && invoices.length === 0 && !loadingProgress.active);
 
 
@@ -190,11 +190,11 @@ export default function InvoicesPage() {
           updatingRemarksIvs={updatingRemarks}
           error={pageError} 
           onRefreshData={handleRefreshData}
-          isLoading={isPageLoading} // This isLoading is for the InvoiceDashboard's internal loading state (e.g. during filtering)
+          isLoading={isPageLoading} 
         />
       )}
-      {!showContent && pageError && ( // Only show page-level error if content can't be displayed
-         <div className="container mx-auto py-10">
+      {!showContent && pageError && ( 
+         <div className="container mx-auto py-10 px-4">
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>שגיאה בטעינת הדף</AlertTitle>
