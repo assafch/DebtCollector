@@ -40,7 +40,7 @@ export function InvoiceDashboard({
 }: InvoiceDashboardProps) {
   const [allInvoices, setAllInvoices] = useState<Invoice[]>(initialInvoices || []);
   const [filters, setFilters] = useState<Filters>(initialFiltersState);
-  const [isFiltering, setIsFiltering] = useState<boolean>(false); // For filter-specific loading
+  const [isProcessing, setIsProcessing] = useState<boolean>(false); // For filter/sort processing
   const [error, setError] = useState<string | undefined>(initialError);
   const { toast } = useToast();
 
@@ -49,36 +49,36 @@ export function InvoiceDashboard({
   }, [initialInvoices]);
 
   const [sortConfig, setSortConfig] = useState<{ key: keyof Invoice | string | null; direction: 'asc' | 'desc' }>({
-    key: 'ACCNAME', 
+    key: 'ACCDES', // Default sort by customer name for grouping
     direction: 'asc',
   });
 
   useEffect(() => {
     if (initialError) {
-      setError(initialError); // Set local error state
+      setError(initialError); 
       toast({
         variant: "destructive",
         title: "Error loading invoices",
         description: initialError,
       });
     } else {
-      setError(undefined); // Clear error if initialError is not present
+      setError(undefined); 
     }
   }, [initialError, toast]);
 
   const handleFilterChange = useCallback((newFilters: Filters) => {
-    setIsFiltering(true);
+    setIsProcessing(true);
     setFilters(newFilters);
   }, []);
 
   const handleClearFilters = useCallback(() => {
-    setIsFiltering(true);
+    setIsProcessing(true);
     setFilters(initialFiltersState);
-    setSortConfig({ key: 'ACCNAME', direction: 'asc' }); 
+    setSortConfig({ key: 'ACCDES', direction: 'asc' }); 
   }, []);
 
   const handleSort = useCallback((keyToSort: keyof Invoice | string) => {
-    setIsFiltering(true); // Use same loading state for sort
+    setIsProcessing(true); 
     setSortConfig(currentSortConfig => {
       let direction: 'asc' | 'desc' = 'asc';
       if (currentSortConfig.key === keyToSort && currentSortConfig.direction === 'asc') {
@@ -142,7 +142,7 @@ export function InvoiceDashboard({
     return invoicesToFilter;
   }, [allInvoices, filters]);
 
-  const sortedAndFilteredInvoices = useMemo(() => {
+  const sortedAndGroupedInvoices = useMemo(() => {
     if (!sortConfig.key) {
       return filteredInvoices;
     }
@@ -150,63 +150,83 @@ export function InvoiceDashboard({
     const sortableInvoices = [...filteredInvoices];
 
     sortableInvoices.sort((a, b) => {
+      let comparison = 0;
+      
+      // Primary sort: always by Customer Name (ACCDES) for grouping, unless sorting by ACCDES/ACCNAME itself
+      if (sortConfig.key !== 'ACCDES' && sortConfig.key !== 'ACCNAME') {
+        const customerA = a.ACCDES || '';
+        const customerB = b.ACCDES || '';
+        comparison = customerA.localeCompare(customerB, 'he', { sensitivity: 'base' });
+        if (comparison !== 0) {
+          return sortConfig.direction === 'asc' ? comparison : -comparison; // Early return if customer names differ for primary group sort
+        }
+      }
+      
+      // Secondary sort (or primary if by customer field)
       let aValue: any;
       let bValue: any;
 
       if (sortConfig.key === 'payment_status') {
         const remarkA = remarksMap.get(a.IVNUM);
         const remarkB = remarksMap.get(b.IVNUM);
-        aValue = remarkA?.status || 'לא שולם'; // Default if no remark
+        aValue = remarkA?.status || 'לא שולם';
         bValue = remarkB?.status || 'לא שולם';
       } else if (sortConfig.key === 'status_date') {
         const remarkA = remarksMap.get(a.IVNUM);
         const remarkB = remarksMap.get(b.IVNUM);
         aValue = remarkA?.status_date ? new Date(remarkA.status_date).getTime() : 0;
         bValue = remarkB?.status_date ? new Date(remarkB.status_date).getTime() : 0;
-      } else {
+      } else if (sortConfig.key === 'follow_up_date') {
+        const remarkA = remarksMap.get(a.IVNUM);
+        const remarkB = remarksMap.get(b.IVNUM);
+        aValue = remarkA?.follow_up_date ? new Date(remarkA.follow_up_date).getTime() : 0;
+        bValue = remarkB?.follow_up_date ? new Date(remarkB.follow_up_date).getTime() : 0;
+      }
+       else {
         aValue = a[sortConfig.key as keyof Invoice];
         bValue = b[sortConfig.key as keyof Invoice];
       }
       
-      let comparison = 0;
-
-      if (aValue === null || aValue === undefined) comparison = 1;
-      else if (bValue === null || bValue === undefined) comparison = -1;
+      let secondaryComparison = 0;
+      if (aValue === null || aValue === undefined) secondaryComparison = 1;
+      else if (bValue === null || bValue === undefined) secondaryComparison = -1;
       else if (typeof aValue === 'number' && typeof bValue === 'number') {
-        comparison = aValue - bValue;
+        secondaryComparison = aValue - bValue;
       } else if (typeof aValue === 'string' && typeof bValue === 'string') {
-        // For date strings (CURDATE, FNCDATE), convert to comparable values
         if (sortConfig.key === 'CURDATE' || sortConfig.key === 'FNCDATE') {
           const dateA = new Date(aValue.split("T")[0] || 0).getTime();
           const dateB = new Date(bValue.split("T")[0] || 0).getTime();
-          if (isNaN(dateA) && isNaN(dateB)) comparison = 0;
-          else if (isNaN(dateA)) comparison = 1;
-          else if (isNaN(dateB)) comparison = -1;
-          else comparison = dateA - dateB;
-        } else { // For other strings like ACCNAME, payment_status
-          comparison = aValue.localeCompare(bValue, 'he', { sensitivity: 'base' });
+          if (isNaN(dateA) && isNaN(dateB)) secondaryComparison = 0;
+          else if (isNaN(dateA)) secondaryComparison = 1;
+          else if (isNaN(dateB)) secondaryComparison = -1;
+          else secondaryComparison = dateA - dateB;
+        } else { 
+          secondaryComparison = aValue.localeCompare(bValue, 'he', { sensitivity: 'base' });
         }
       } else {
-        comparison = String(aValue).localeCompare(String(bValue), 'he', { sensitivity: 'base' });
+        secondaryComparison = String(aValue).localeCompare(String(bValue), 'he', { sensitivity: 'base' });
       }
       
+      // If primary sort by customer was already done and was equal, use secondary.
+      // Or if sorting by customer field, this is the primary comparison.
+      comparison = secondaryComparison;
+
       return sortConfig.direction === 'asc' ? comparison : -comparison;
     });
     return sortableInvoices;
   }, [filteredInvoices, sortConfig, remarksMap]);
   
   useEffect(() => {
-    // This effect handles the loading state for filtering/sorting.
-    if (isFiltering) {
+    if (isProcessing) {
       const timer = setTimeout(() => {
-        setIsFiltering(false);
-      }, 300); // Simulate a small delay for UX
+        setIsProcessing(false);
+      }, 300); 
       return () => clearTimeout(timer);
     }
-  }, [sortedAndFilteredInvoices, isFiltering]); // Re-run when sortedAndFilteredInvoices changes
+  }, [sortedAndGroupedInvoices, isProcessing]);
 
 
-  if (isPageLoading && allInvoices.length === 0) { // Show full page loader only if no data yet
+  if (isPageLoading && allInvoices.length === 0) { 
     return (
       <div className="flex justify-center items-center h-64">
         <LoadingSpinner size={48} />
@@ -231,8 +251,8 @@ export function InvoiceDashboard({
     <div className="space-y-6 py-6">
        <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">חשבוניות לקוח</h1>
-        <Button onClick={onRefreshData} disabled={isPageLoading || isFiltering} variant="outline">
-          {(isPageLoading && allInvoices.length === 0) || isFiltering ? <LoadingSpinner size={18} className="mr-2 rtl:ml-2 rtl:mr-0" /> : <RefreshCw className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />}
+        <Button onClick={onRefreshData} disabled={isPageLoading || isProcessing} variant="outline">
+          {(isPageLoading && allInvoices.length === 0) || isProcessing ? <LoadingSpinner size={18} className="mr-2 rtl:ml-2 rtl:mr-0" /> : <RefreshCw className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />}
           רענן נתונים
         </Button>
       </div>
@@ -240,14 +260,14 @@ export function InvoiceDashboard({
         filters={filters}
         onFilterChange={handleFilterChange}
         onClearFilters={handleClearFilters}
-        isLoading={isFiltering}
+        isLoading={isProcessing}
       />
       <InvoiceDataTable 
-        invoices={sortedAndFilteredInvoices} 
+        invoices={sortedAndGroupedInvoices} 
         remarksMap={remarksMap}
         onUpdateRemark={onUpdateRemark}
         updatingRemarksIvs={updatingRemarksIvs}
-        isLoading={isFiltering || (isPageLoading && allInvoices.length > 0)} // Show table loader if filtering or if page is loading but already has some data
+        isLoading={isProcessing || (isPageLoading && allInvoices.length > 0)} 
         onSort={handleSort}
         sortKey={sortConfig.key}
         sortDirection={sortConfig.direction}
@@ -255,3 +275,4 @@ export function InvoiceDashboard({
     </div>
   );
 }
+
