@@ -8,7 +8,7 @@ const Table = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div className="relative w-full"> {/* Removed overflow-auto */}
     <table
-      ref={ref} 
+      ref={ref}
       className={cn("w-full caption-bottom text-sm", className)}
       {...props}
     />
@@ -19,11 +19,9 @@ Table.displayName = "Table"
 const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
->(({ className, children, ...rest }, ref) => ( // Explicitly destructure children, use ...rest for other props
-  <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...rest}>
-    {children} {/* Render children directly */}
-  </thead>
-))
+>(({ className, children, ...props }, ref) => (
+  <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props}>{children}</thead>
+));
 TableHeader.displayName = "TableHeader"
 
 const TableBody = React.forwardRef<
