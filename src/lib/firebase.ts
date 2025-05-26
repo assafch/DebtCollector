@@ -9,21 +9,16 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth";
 // IMPORTANT: Replace these with your actual Firebase project configuration
 // It's highly recommended to use environment variables for this in a real application
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAIVjnicAHdhYw46zx508X1g5gfVX1_MUM", // Placeholder - REPLACE if not already done
+  authDomain: "debt-collector-9t64l.firebaseapp.com", // Placeholder - REPLACE if not already done
+  projectId: "debt-collector-9t64l", // Placeholder - REPLACE if not already done
+  storageBucket: "debt-collector-9t64l.firebasestorage.app", // Placeholder - REPLACE if not already done
+  messagingSenderId: "981314791940", // Placeholder - REPLACE if not already done
+  appId: "1:981314791940:web:23b24c432e3bdeb9902351" // Placeholder - REPLACE if not already done
 };
 
-// Initialize Firebase
-let app: FirebaseApp;
-if (!getApps().length) {
-  app = initializeApp(firebaseConfig);
-} else {
-  app = getApps()[0]!;
-}
+// Initialize Firebase app singleton
+const app: FirebaseApp = getApps().length > 0 ? getApps()[0]! : initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
