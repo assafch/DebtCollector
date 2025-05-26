@@ -460,7 +460,7 @@ export function InvoiceDataTable({
         </div>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[calc(100vh-300px)] w-full rounded-md border" dir="rtl"> 
+        <ScrollArea className="h-[calc(100vh-300px)] w-full rounded-md border"> 
           <Table>
             <TableCaption className="py-4">
               {isLoading && invoices.length === 0
