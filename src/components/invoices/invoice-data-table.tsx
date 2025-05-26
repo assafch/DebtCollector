@@ -64,8 +64,8 @@ const columnConfiguration: ColumnDefinition[] = [
   { key: "FNCDATE", label: "תאריך פרעון", isSortable: true, className: "min-w-[100px]" },
   { key: "CURDATE", label: "תאריך חשבונית", isSortable: true, className: "min-w-[100px]" },
   { key: "IVNUM", label: "מספר חשבונית", isSortable: true, className: "min-w-[120px]" },
-  { key: "ACCNAME", label: "שם לקוח", isSortable: true, className: "min-w-[180px] sticky right-[220px] bg-card z-20" }, // Adjusted offset
-  { key: "ACCDES", label: "מ. לקוח", isSortable: true, className: "min-w-[220px] sticky right-0 bg-card z-20" }, // Adjusted width
+  { key: "ACCNAME", label: "שם לקוח", isSortable: true, className: "min-w-[180px] sticky right-[220px] bg-card z-20" }, 
+  { key: "ACCDES", label: "מ. לקוח", isSortable: true, className: "min-w-[220px] sticky right-0 bg-card z-20" }, 
 ].reverse();
 
 
@@ -173,7 +173,6 @@ export function InvoiceDataTable({
   const handleSaveEditDialog = async () => {
     if (!editingInvoiceData.invoice || !editingInvoiceData.remark) return;
     
-    // Remove id and invoiceId from the payload if they are not meant to be updated or are placeholders
     const { id, invoiceId, ...updatePayload } = editingInvoiceData.remark;
 
     await onUpdateRemark(editingInvoiceData.invoice.IVNUM, updatePayload as Partial<InvoiceRemark>);
@@ -187,7 +186,7 @@ export function InvoiceDataTable({
       if ((field === 'status_date' || field === 'follow_up_date') && value instanceof Date) {
         processedValue = formatISO(value);
       } else if ((field === 'status_date' || field === 'follow_up_date') && value === undefined){
-        processedValue = undefined; // explicitly allow unsetting date
+        processedValue = undefined; 
       }
 
       setEditingInvoiceData(prev => ({
@@ -195,7 +194,7 @@ export function InvoiceDataTable({
         remark: {
           ...prev.remark!,
           [field]: processedValue,
-          ...(field === 'status' && !prev.remark!.status_date && { status_date: formatISO(new Date()) }) // set status_date if changing status and it's not set
+          ...(field === 'status' && !prev.remark!.status_date && { status_date: formatISO(new Date()) }) 
         }
       }));
     }
@@ -212,7 +211,7 @@ export function InvoiceDataTable({
     if (isLoading && invoices.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={columnConfiguration.length + 1} className="h-24 text-center"> {/* +1 for checkbox */}
+          <TableCell colSpan={columnConfiguration.length + 1} className="h-24 text-center"> 
             <div className="flex justify-center items-center">
                <LoadingSpinner size={32} />
             </div>
@@ -234,41 +233,41 @@ export function InvoiceDataTable({
     let currentCustomerAccName: string | null = null;
     let currentGroupInvoices: Invoice[] = [];
 
-    invoices.forEach((invoice) => { // Removed index as it's not used and can cause issues if list changes
+    invoices.forEach((invoice) => { 
       const customerAccName = invoice.ACCDES; 
 
       if (customerAccName !== currentCustomerAccName) {
         if (currentCustomerAccName !== null && currentGroupInvoices.length > 0) {
-          // Render subtotal for previous group
+          
           const subtotals = calculateGroupSubtotals(currentGroupInvoices, remarksMap);
           rows.push(
             <TableRow key={`subtotal-${currentCustomerAccName}`} className="bg-muted/50 font-semibold">
               <TableCell 
-                colSpan={2} // Checkbox + expander
+                colSpan={2} 
                 className="text-right px-2 py-3 sticky right-0 bg-muted/50 z-10" 
                 style={{ right: '0px' }}
               >
                  סה"כ {currentCustomerAccName}:
               </TableCell>
-              {/* Placeholders for other columns up to SUM */}
-              <TableCell className="sticky right-[220px] bg-muted/50 z-10"></TableCell>
-              <TableCell></TableCell> 
-              <TableCell></TableCell> 
-              <TableCell></TableCell> 
+              
+              <TableCell className="sticky right-[220px] bg-muted/50 z-10 text-right"></TableCell>
+              <TableCell className="text-right"></TableCell> 
+              <TableCell className="text-right"></TableCell> 
+              <TableCell className="text-right"></TableCell> 
               <TableCell className="text-right px-2 py-3">{formatCurrency(subtotals.totalAmount)} ({subtotals.totalCount} חשב')</TableCell>
               <TableCell className="text-right px-2 py-3 text-destructive">{formatCurrency(subtotals.openAmount)} ({subtotals.openCount} פתוחות)</TableCell>
-              <TableCell colSpan={columnConfiguration.length - 8}></TableCell> 
+              <TableCell colSpan={columnConfiguration.length - 8} className="text-right"></TableCell> 
             </TableRow>
           );
         }
-        // Render group header for new group
+        
         const isGroupSelected = currentGroupInvoices.length > 0 && currentGroupInvoices.every(inv => selectedInvoices[inv.IVNUM]);
         rows.push(
           <TableRow 
             key={`header-${customerAccName}`} 
             className="bg-secondary/70 text-secondary-foreground hover:bg-secondary/90"
           >
-            <TableCell className="px-2 py-2 sticky right-0 bg-secondary/70 z-10 w-12">
+            <TableCell className="px-2 py-2 sticky right-0 bg-secondary/70 z-10 w-12 text-center">
                 <Checkbox
                   checked={currentGroupInvoices.every(inv => selectedInvoices[inv.IVNUM]) && currentGroupInvoices.length > 0}
                   onCheckedChange={(checked) => handleGroupSelect(customerAccName, invoices.filter(i => i.ACCDES === customerAccName), !!checked)}
@@ -278,7 +277,7 @@ export function InvoiceDataTable({
             <TableCell 
               className="text-right font-bold px-2 py-2 text-lg sticky right-[48px] bg-secondary/70 z-10 cursor-pointer"
               onClick={() => toggleGroup(customerAccName)}
-              colSpan={columnConfiguration.length} // Span all columns
+              colSpan={columnConfiguration.length} 
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
@@ -311,7 +310,7 @@ export function InvoiceDataTable({
             {columnConfiguration.map((col) => {
               let displayData: React.ReactNode;
               const isSticky = col.key === "ACCDES" || col.key === "ACCNAME";
-              const stickyOffset = col.key === "ACCDES" ? "48px" : col.key === "ACCNAME" ? "268px" : undefined; // Adjusted for checkbox
+              const stickyOffset = col.key === "ACCDES" ? "48px" : col.key === "ACCNAME" ? "268px" : undefined; 
 
               if (col.key === "actions") {
                 displayData = (
@@ -330,7 +329,7 @@ export function InvoiceDataTable({
                       disabled={isUpdatingThisRemark}
                       dir="rtl"
                     >
-                      <SelectTrigger className="w-full min-w-[150px] h-9 text-xs">
+                      <SelectTrigger className="w-full min-w-[150px] h-9 text-xs text-right">
                         <SelectValue placeholder="בחר סטטוס" />
                       </SelectTrigger>
                       <SelectContent>
@@ -352,7 +351,7 @@ export function InvoiceDataTable({
                           onUpdateRemark(invoice.IVNUM, { status_date: date ? formatISO(date) : undefined });
                         }}
                         placeholder="בחר תאריך"
-                        className="w-full min-w-[150px] h-9 text-xs"
+                        className="w-full min-w-[150px] h-9 text-xs text-right"
                         disabled={isUpdatingThisRemark}
                       />
                     );
@@ -376,7 +375,7 @@ export function InvoiceDataTable({
                           onUpdateRemark(invoice.IVNUM, { follow_up_date: date ? formatISO(date) : undefined });
                         }}
                         placeholder="בחר תאריך"
-                        className="w-full min-w-[150px] h-9 text-xs"
+                        className="w-full min-w-[150px] h-9 text-xs text-right"
                         disabled={isUpdatingThisRemark}
                       />
                     );
@@ -409,25 +408,24 @@ export function InvoiceDataTable({
       }
     });
 
-    // Render subtotal for the last group
     if (currentCustomerAccName !== null && currentGroupInvoices.length > 0) {
       const subtotals = calculateGroupSubtotals(currentGroupInvoices, remarksMap);
       rows.push(
         <TableRow key={`subtotal-${currentCustomerAccName}-final`} className="bg-muted/50 font-semibold">
               <TableCell 
-                colSpan={2} // Checkbox + expander
+                colSpan={2} 
                 className="text-right px-2 py-3 sticky right-0 bg-muted/50 z-10"
                 style={{ right: '0px' }}
               >
                  סה"כ {currentCustomerAccName}:
               </TableCell>
-              <TableCell className="sticky right-[220px] bg-muted/50 z-10"></TableCell>
-              <TableCell></TableCell> 
-              <TableCell></TableCell> 
-              <TableCell></TableCell> 
+              <TableCell className="sticky right-[220px] bg-muted/50 z-10 text-right"></TableCell>
+              <TableCell className="text-right"></TableCell> 
+              <TableCell className="text-right"></TableCell> 
+              <TableCell className="text-right"></TableCell> 
               <TableCell className="text-right px-2 py-3">{formatCurrency(subtotals.totalAmount)} ({subtotals.totalCount} חשב')</TableCell>
               <TableCell className="text-right px-2 py-3 text-destructive">{formatCurrency(subtotals.openAmount)} ({subtotals.openCount} פתוחות)</TableCell>
-              <TableCell colSpan={columnConfiguration.length - 8}></TableCell>
+              <TableCell colSpan={columnConfiguration.length - 8} className="text-right"></TableCell>
         </TableRow>
       );
     }
@@ -462,7 +460,7 @@ export function InvoiceDataTable({
         </div>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[calc(100vh-300px)] w-full rounded-md border"> {/* Adjusted height */}
+        <ScrollArea className="h-[calc(100vh-300px)] w-full rounded-md border" dir="rtl"> 
           <Table>
             <TableCaption className="py-4">
               {isLoading && invoices.length === 0
@@ -488,7 +486,7 @@ export function InvoiceDataTable({
                     style={col.key === "ACCDES" ? { position: 'sticky', right: '48px', zIndex: 31 } : col.key === "ACCNAME" ? { position: 'sticky', right: '268px', zIndex: 31 } : {}}
                   >
                      <div className="flex items-center justify-end rtl:justify-start"> 
-                        <span>{col.label}</span>
+                        <span className="text-right">{col.label}</span>
                         {col.isSortable && renderSortIcon(col.key)}
                     </div>
                   </TableHead>
@@ -519,7 +517,7 @@ export function InvoiceDataTable({
                   onValueChange={(value: PaymentStatus) => handleEditDialogInputChange('status', value)}
                   dir="rtl"
                 >
-                  <SelectTrigger id="payment_status_dialog" className="col-span-3 h-9">
+                  <SelectTrigger id="payment_status_dialog" className="col-span-3 h-9 text-right">
                     <SelectValue placeholder="בחר סטטוס" />
                   </SelectTrigger>
                   <SelectContent>
@@ -534,7 +532,7 @@ export function InvoiceDataTable({
                 <DatePicker
                   date={editingInvoiceData.remark.status_date && isValid(parseISO(editingInvoiceData.remark.status_date)) ? parseISO(editingInvoiceData.remark.status_date) : undefined}
                   setDate={(date) => handleEditDialogInputChange('status_date', date)}
-                  className="col-span-3 h-9"
+                  className="col-span-3 h-9 text-right"
                   id="status_date_dialog"
                 />
               </div>
@@ -544,7 +542,7 @@ export function InvoiceDataTable({
                   id="remarks_text_dialog"
                   value={editingInvoiceData.remark.text || ""}
                   onChange={(e) => handleEditDialogInputChange('text', e.target.value)}
-                  className="col-span-3 min-h-[80px]"
+                  className="col-span-3 min-h-[80px] text-right"
                   rows={3}
                 />
               </div>
@@ -553,7 +551,7 @@ export function InvoiceDataTable({
                  <DatePicker
                   date={editingInvoiceData.remark.follow_up_date && isValid(parseISO(editingInvoiceData.remark.follow_up_date)) ? parseISO(editingInvoiceData.remark.follow_up_date) : undefined}
                   setDate={(date) => handleEditDialogInputChange('follow_up_date', date)}
-                  className="col-span-3 h-9"
+                  className="col-span-3 h-9 text-right"
                   id="follow_up_date_dialog"
                 />
               </div>
@@ -571,3 +569,4 @@ export function InvoiceDataTable({
     </Card>
   );
 }
+
