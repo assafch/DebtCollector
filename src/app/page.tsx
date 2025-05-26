@@ -11,7 +11,7 @@ import {
   fetchOpenInvoicesAction,
   fetchInvoiceRemarksAction,
   fetchErpConfigAction,
-  handleLogoutAction
+  // handleLogoutAction is no longer passed to ResponsiveAppLayout directly
 } from "./actions";
 import type { Invoice } from '@/types/invoice';
 import type { InvoiceRemark, ErpConfig, DashboardMetrics } from '@/types/dashboard';
@@ -26,6 +26,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 import { LoadingStatusDialog } from '@/components/layout/loading-status-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 const menuItems: MenuItemType[] = [
   { name: 'Dashboard', iconName: 'LayoutDashboard', path: '/' },
@@ -49,11 +50,12 @@ export default function DashboardPage() {
     active: boolean;
     message: string;
     progressVal: number;
-  }>({ active: true, message: 'מתחיל טעינה...', progressVal: 0 }); // Start active
+  }>({ active: true, message: 'מתחיל טעינה...', progressVal: 0 }); 
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
   const { toast } = useToast();
+  const { user, loading: authLoading } = useAuth(); // Get user and authLoading state
 
   const fetchData = useCallback(async (isManualRefresh = false) => {
     if (!isManualRefresh) {
@@ -121,12 +123,23 @@ export default function DashboardPage() {
   }, [toast]);
 
   useEffect(() => {
-    fetchData(false); // Initial fetch
+    if (!authLoading && user) { // Only fetch data if user is loaded and logged in
+        fetchData(false);
+    } else if (!authLoading && !user) {
+        setLoadingProgress({ active: false, message: '', progressVal: 0 });
+        setInvoices([]); // Clear data if user logs out
+        setRemarks([]);
+        setRemarksMap(new Map());
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array ensures this runs only once on mount
+  }, [authLoading, user]); // Add user to dependency array
 
   const handleRefreshData = () => {
-    fetchData(true); // Manual refresh
+    if (user) { // Only refresh if user is logged in
+        fetchData(true);
+    } else {
+        toast({ title: "נדרשת התחברות", description: "יש להתחבר למערכת על מנת לרענן נתונים."});
+    }
   };
 
   const metrics = useMemo((): DashboardMetrics => {
@@ -176,11 +189,47 @@ export default function DashboardPage() {
     };
   }, [invoices, remarksMap]);
 
-  if (error && !loadingProgress.active && invoices.length === 0) { // Show error only if not loading and no data at all
+  if (authLoading) {
     return (
       <ResponsiveAppLayout 
         menuItems={menuItems} 
-        onLogout={handleLogoutAction}
+        appName="Priority Connect"
+        logoSrc="https://placehold.co/64x64.png"
+        data-ai-hint="logo abstract"
+      >
+        <div className="flex justify-center items-center h-screen">
+          <LoadingSpinner size={48} />
+          <p className="ml-4 rtl:mr-4">טוען נתוני משתמש...</p>
+        </div>
+      </ResponsiveAppLayout>
+    );
+  }
+  
+  if (!user) {
+    return (
+       <ResponsiveAppLayout 
+        menuItems={menuItems} 
+        appName="Priority Connect"
+        logoSrc="https://placehold.co/64x64.png"
+        data-ai-hint="logo abstract"
+      >
+        <div className="container mx-auto py-10 px-4 text-center">
+           <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>נדרשת התחברות</AlertTitle>
+            <AlertDescription>
+              יש להתחבר למערכת על מנת לצפות בלוח הבקרה.
+            </AlertDescription>
+          </Alert>
+        </div>
+      </ResponsiveAppLayout>
+    )
+  }
+
+  if (error && !loadingProgress.active && invoices.length === 0) { 
+    return (
+      <ResponsiveAppLayout 
+        menuItems={menuItems} 
         appName="Priority Connect"
         logoSrc="https://placehold.co/64x64.png"
         data-ai-hint="logo abstract"
@@ -211,7 +260,6 @@ export default function DashboardPage() {
   return (
     <ResponsiveAppLayout 
       menuItems={menuItems} 
-      onLogout={handleLogoutAction}
       appName="Priority Connect"
       logoSrc="https://placehold.co/64x64.png"
       data-ai-hint="logo abstract"

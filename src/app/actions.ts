@@ -191,13 +191,13 @@ export async function fetchCustomersAction(): Promise<FetchCustomersResult> {
   return { data: customersList };
 }
 
-
+// This server action for logout might not be directly used by the UI's logout button anymore
+// if the ResponsiveAppLayout handles logout via AuthContext.
+// However, it can be kept for other potential server-side logout needs or future use.
 export async function handleLogoutAction() {
   "use server";
-  console.log("Logout action triggered (Server Action from actions.ts)");
-  // Add actual server-side logout logic here
-  // e.g., clearing cookies, invalidating session, redirecting
-  // For this example, it just logs to the server console.
+  console.log("Logout server action triggered (from actions.ts)");
+  // In a real Firebase app, server-side session invalidation might involve custom logic
+  // or admin SDK calls if you're managing sessions beyond client-side Firebase Auth.
+  // For client-side Firebase auth, signOut() is handled on the client.
 }
-
-

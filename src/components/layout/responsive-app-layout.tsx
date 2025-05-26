@@ -14,14 +14,17 @@ import {
   Users, 
   PhoneCall, 
   Settings as SettingsLucide,
-  Sun, // Added Sun icon
-  Moon, // Added Moon icon
+  Sun,
+  Moon,
   type LucideIcon 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import type { MenuItemType as MenuItemPropType } from '@/types/layout';
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import { LoginWithGoogleButton } from '@/components/auth/LoginWithGoogleButton'; // Import LoginButton
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; // For user avatar
 
 const iconMap: Record<string, LucideIcon> = {
   LayoutDashboard,
@@ -33,7 +36,7 @@ const iconMap: Record<string, LucideIcon> = {
 
 interface ResponsiveAppLayoutProps {
   menuItems: MenuItemPropType[];
-  onLogout: () => void | Promise<void>;
+  // onLogout prop is removed as logout is handled by AuthContext
   children: React.ReactNode;
   logoSrc?: string;
   appName: string;
@@ -41,7 +44,6 @@ interface ResponsiveAppLayoutProps {
 
 export function ResponsiveAppLayout({
   menuItems,
-  onLogout,
   children,
   logoSrc,
   appName
@@ -50,6 +52,8 @@ export function ResponsiveAppLayout({
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
   const [currentPageTitle, setCurrentPageTitle] = useState('');
   const [theme, setTheme] = useState('light');
+
+  const { user, loading: authLoading, logout } = useAuth(); // Get user and logout from AuthContext
 
   useEffect(() => {
     const storedTheme = localStorage.getItem('theme');
@@ -81,6 +85,13 @@ export function ResponsiveAppLayout({
 
   const toggleTheme = () => {
     setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    if (isMobileSheetOpen) {
+      setIsMobileSheetOpen(false);
+    }
   };
 
   const sidebarNavigation = (
@@ -116,19 +127,34 @@ export function ResponsiveAppLayout({
         {logoSrc && <Image data-ai-hint="logo office" src={logoSrc} alt={`${appName} Logo`} width={32} height={32} className="rounded"/>}
         <h1 className="text-xl font-semibold text-foreground">{appName}</h1>
       </div>
+      {user && (
+         <div className="p-4 border-b border-border flex items-center space-x-3 rtl:space-x-reverse">
+            <Avatar>
+              <AvatarImage src={user.photoURL || undefined} alt={user.displayName || "User"} />
+              <AvatarFallback>{user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="text-sm font-medium text-foreground">{user.displayName || "User"}</p>
+              <p className="text-xs text-muted-foreground">{user.email}</p>
+            </div>
+        </div>
+      )}
       {sidebarNavigation}
       <div className="p-4 mt-auto border-t border-border space-y-2">
         <Button variant="outline" className="w-full justify-center" onClick={toggleTheme}>
           {theme === 'light' ? <Moon className="h-5 w-5 mr-2 rtl:ml-2 rtl:mr-0" /> : <Sun className="h-5 w-5 mr-2 rtl:ml-2 rtl:mr-0" />}
           {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
         </Button>
-        <Button variant="outline" className="w-full justify-start text-left" onClick={async () => {
-          await onLogout();
-          if (isMobileSheetOpen) setIsMobileSheetOpen(false);
-        }}>
-          <LogOut className="mr-2 rtl:ml-2 rtl:mr-0 h-5 w-5" />
-          Logout
-        </Button>
+        {!authLoading && (
+          user ? (
+            <Button variant="outline" className="w-full justify-start text-left" onClick={handleLogout}>
+              <LogOut className="mr-2 rtl:ml-2 rtl:mr-0 h-5 w-5" />
+              Logout
+            </Button>
+          ) : (
+            <LoginWithGoogleButton />
+          )
+        )}
       </div>
     </div>
   );
@@ -152,14 +178,20 @@ export function ResponsiveAppLayout({
             </SheetContent>
           </Sheet>
           <h2 className="text-lg font-semibold text-foreground">{currentPageTitle}</h2>
-           {/* Placeholder for potential right-side mobile header items, like a theme toggle */}
           <div className="w-10 h-10">
-             {/* Example: Could place mobile theme toggle here if desired */}
+             {/* Placeholder for mobile theme toggle or other actions if needed */}
           </div>
         </header>
 
         <main className="flex-grow p-4 md:p-6 overflow-y-auto">
-          {children}
+          {/* Conditionally render children based on auth state if needed, or protect routes */}
+          {authLoading ? (
+            <div className="flex justify-center items-center h-full">
+              <p>Loading user...</p> {/* Replace with a proper spinner/loader */}
+            </div>
+          ) : (
+            children
+          )}
         </main>
       </div>
     </div>

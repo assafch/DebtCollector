@@ -6,7 +6,7 @@ import { ResponsiveAppLayout } from "@/components/layout/responsive-app-layout";
 import { InvoiceDashboard } from "@/components/invoices/invoice-dashboard";
 import { 
   fetchOpenInvoicesAction, 
-  handleLogoutAction,
+  // handleLogoutAction is no longer passed to ResponsiveAppLayout directly
   fetchInvoiceRemarksAction,
   updateInvoiceRemarkAction 
 } from "../actions";
@@ -16,9 +16,11 @@ import type { InvoiceRemark } from '@/types/dashboard';
 import { useToast } from "@/hooks/use-toast";
 import { formatISO } from 'date-fns';
 import { LoadingStatusDialog } from '@/components/layout/loading-status-dialog';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'; // Added
-import { Button } from '@/components/ui/button'; // Added
-import { AlertCircle } from 'lucide-react'; // Added
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { AlertCircle } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import { LoadingSpinner } from '@/components/ui/loading-spinner'; // Import LoadingSpinner
 
 const menuItems: MenuItemType[] = [
   { name: 'Dashboard', iconName: 'LayoutDashboard', path: '/' },
@@ -42,6 +44,7 @@ export default function InvoicesPage() {
   const [updatingRemarks, setUpdatingRemarks] = useState<Set<string>>(new Set());
 
   const { toast } = useToast();
+  const { user, loading: authLoading } = useAuth(); // Get user and authLoading state
 
   const loadInitialData = useCallback(async (isManualRefresh = false) => {
     if (!isManualRefresh) {
@@ -97,12 +100,22 @@ export default function InvoicesPage() {
   }, [toast]);
 
   useEffect(() => {
-    loadInitialData(false); // Initial fetch
+    if (!authLoading && user) { // Only fetch if user is loaded and logged in
+      loadInitialData(false);
+    } else if (!authLoading && !user) {
+      setLoadingProgress({ active: false, message: '', progressVal: 0 });
+      setInvoices([]); // Clear data if user logs out
+      setRemarksMap(new Map());
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array ensures this runs only once on mount
+  }, [authLoading, user]); // Add user dependency
 
   const handleRefreshData = () => {
-    loadInitialData(true); // Manual refresh
+    if (user) { // Only refresh if user is logged in
+      loadInitialData(true);
+    } else {
+       toast({ title: "נדרשת התחברות", description: "יש להתחבר למערכת על מנת לרענן נתונים."});
+    }
   };
 
   const handleUpdateRemark = useCallback(async (invoiceId: string, updates: Partial<Omit<InvoiceRemark, 'id' | 'invoiceId'>>) => {
@@ -164,6 +177,43 @@ export default function InvoicesPage() {
     }
   }, [remarksMap, toast]);
   
+  if (authLoading) {
+    return (
+      <ResponsiveAppLayout 
+        menuItems={menuItems} 
+        appName="Priority Connect"
+        logoSrc="https://placehold.co/64x64.png"
+        data-ai-hint="logo abstract"
+      >
+        <div className="flex justify-center items-center h-screen">
+          <LoadingSpinner size={48} />
+          <p className="ml-4 rtl:mr-4">טוען נתוני משתמש...</p>
+        </div>
+      </ResponsiveAppLayout>
+    );
+  }
+
+  if (!user) {
+     return (
+       <ResponsiveAppLayout 
+        menuItems={menuItems} 
+        appName="Priority Connect"
+        logoSrc="https://placehold.co/64x64.png"
+        data-ai-hint="logo abstract"
+      >
+        <div className="container mx-auto py-10 px-4 text-center">
+           <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>נדרשת התחברות</AlertTitle>
+            <AlertDescription>
+              יש להתחבר למערכת על מנת לצפות בחשבוניות.
+            </AlertDescription>
+          </Alert>
+        </div>
+      </ResponsiveAppLayout>
+    )
+  }
+
   const showContent = !pageError || invoices.length > 0;
   const isPageLoading = loadingProgress.active || (!pageError && invoices.length === 0 && !loadingProgress.active);
 
@@ -171,7 +221,6 @@ export default function InvoicesPage() {
   return (
     <ResponsiveAppLayout 
       menuItems={menuItems} 
-      onLogout={handleLogoutAction}
       appName="Priority Connect"
       logoSrc="https://placehold.co/64x64.png"
       data-ai-hint="logo abstract"
