@@ -6,7 +6,6 @@ import { ResponsiveAppLayout } from "@/components/layout/responsive-app-layout";
 import { InvoiceDashboard } from "@/components/invoices/invoice-dashboard";
 import { 
   fetchOpenInvoicesAction, 
-  // handleLogoutAction is no longer passed to ResponsiveAppLayout directly
   fetchInvoiceRemarksAction,
   updateInvoiceRemarkAction 
 } from "../actions";
@@ -19,8 +18,8 @@ import { LoadingStatusDialog } from '@/components/layout/loading-status-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { AlertCircle } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
-import { LoadingSpinner } from '@/components/ui/loading-spinner'; // Import LoadingSpinner
+import { useAuth } from '@/context/AuthContext'; 
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const menuItems: MenuItemType[] = [
   { name: 'Dashboard', iconName: 'LayoutDashboard', path: '/' },
@@ -44,7 +43,7 @@ export default function InvoicesPage() {
   const [updatingRemarks, setUpdatingRemarks] = useState<Set<string>>(new Set());
 
   const { toast } = useToast();
-  const { user, loading: authLoading } = useAuth(); // Get user and authLoading state
+  // const { user, loading: authLoading } = useAuth(); 
 
   const loadInitialData = useCallback(async (isManualRefresh = false) => {
     if (!isManualRefresh) {
@@ -97,25 +96,26 @@ export default function InvoicesPage() {
       });
       setLoadingProgress({ active: false, message: '', progressVal: 0 });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toast]);
 
   useEffect(() => {
-    if (!authLoading && user) { // Only fetch if user is loaded and logged in
+    // if (!authLoading && user) { 
       loadInitialData(false);
-    } else if (!authLoading && !user) {
-      setLoadingProgress({ active: false, message: '', progressVal: 0 });
-      setInvoices([]); // Clear data if user logs out
-      setRemarksMap(new Map());
-    }
+    // } else if (!authLoading && !user) {
+    //   setLoadingProgress({ active: false, message: '', progressVal: 0 });
+    //   setInvoices([]); 
+    //   setRemarksMap(new Map());
+    // }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, user]); // Add user dependency
+  }, []); // Removed authLoading, user from dependency array
 
   const handleRefreshData = () => {
-    if (user) { // Only refresh if user is logged in
+    // if (user) { 
       loadInitialData(true);
-    } else {
-       toast({ title: "נדרשת התחברות", description: "יש להתחבר למערכת על מנת לרענן נתונים."});
-    }
+    // } else {
+    //    toast({ title: "נדרשת התחברות", description: "יש להתחבר למערכת על מנת לרענן נתונים."});
+    // }
   };
 
   const handleUpdateRemark = useCallback(async (invoiceId: string, updates: Partial<Omit<InvoiceRemark, 'id' | 'invoiceId'>>) => {
@@ -177,42 +177,42 @@ export default function InvoicesPage() {
     }
   }, [remarksMap, toast]);
   
-  if (authLoading) {
-    return (
-      <ResponsiveAppLayout 
-        menuItems={menuItems} 
-        appName="Priority Connect"
-        logoSrc="https://placehold.co/64x64.png"
-        data-ai-hint="logo abstract"
-      >
-        <div className="flex justify-center items-center h-screen">
-          <LoadingSpinner size={48} />
-          <p className="ml-4 rtl:mr-4">טוען נתוני משתמש...</p>
-        </div>
-      </ResponsiveAppLayout>
-    );
-  }
+  // if (authLoading) {
+  //   return (
+  //     <ResponsiveAppLayout 
+  //       menuItems={menuItems} 
+  //       appName="Priority Connect"
+  //       logoSrc="https://placehold.co/64x64.png"
+  //       data-ai-hint="logo abstract"
+  //     >
+  //       <div className="flex justify-center items-center h-screen">
+  //         <LoadingSpinner size={48} />
+  //         <p className="ml-4 rtl:mr-4">טוען נתוני משתמש...</p>
+  //       </div>
+  //     </ResponsiveAppLayout>
+  //   );
+  // }
 
-  if (!user) {
-     return (
-       <ResponsiveAppLayout 
-        menuItems={menuItems} 
-        appName="Priority Connect"
-        logoSrc="https://placehold.co/64x64.png"
-        data-ai-hint="logo abstract"
-      >
-        <div className="container mx-auto py-10 px-4 text-center">
-           <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>נדרשת התחברות</AlertTitle>
-            <AlertDescription>
-              יש להתחבר למערכת על מנת לצפות בחשבוניות.
-            </AlertDescription>
-          </Alert>
-        </div>
-      </ResponsiveAppLayout>
-    )
-  }
+  // if (!user) {
+  //    return (
+  //      <ResponsiveAppLayout 
+  //       menuItems={menuItems} 
+  //       appName="Priority Connect"
+  //       logoSrc="https://placehold.co/64x64.png"
+  //       data-ai-hint="logo abstract"
+  //     >
+  //       <div className="container mx-auto py-10 px-4 text-center">
+  //          <Alert>
+  //           <AlertCircle className="h-4 w-4" />
+  //           <AlertTitle>נדרשת התחברות</AlertTitle>
+  //           <AlertDescription>
+  //             יש להתחבר למערכת על מנת לצפות בחשבוניות.
+  //           </AlertDescription>
+  //         </Alert>
+  //       </div>
+  //     </ResponsiveAppLayout>
+  //   )
+  // }
 
   const showContent = !pageError || invoices.length > 0;
   const isPageLoading = loadingProgress.active || (!pageError && invoices.length === 0 && !loadingProgress.active);

@@ -11,7 +11,6 @@ import {
   fetchOpenInvoicesAction,
   fetchInvoiceRemarksAction,
   fetchErpConfigAction,
-  // handleLogoutAction is no longer passed to ResponsiveAppLayout directly
 } from "./actions";
 import type { Invoice } from '@/types/invoice';
 import type { InvoiceRemark, ErpConfig, DashboardMetrics } from '@/types/dashboard';
@@ -26,7 +25,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 import { LoadingStatusDialog } from '@/components/layout/loading-status-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import { useAuth } from '@/context/AuthContext';
 
 const menuItems: MenuItemType[] = [
   { name: 'Dashboard', iconName: 'LayoutDashboard', path: '/' },
@@ -55,7 +54,7 @@ export default function DashboardPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
   const { toast } = useToast();
-  const { user, loading: authLoading } = useAuth(); // Get user and authLoading state
+  // const { user, loading: authLoading } = useAuth(); 
 
   const fetchData = useCallback(async (isManualRefresh = false) => {
     if (!isManualRefresh) {
@@ -120,26 +119,27 @@ export default function DashboardPage() {
         setIsRefreshing(false);
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toast]);
 
   useEffect(() => {
-    if (!authLoading && user) { // Only fetch data if user is loaded and logged in
+    // if (!authLoading && user) { 
         fetchData(false);
-    } else if (!authLoading && !user) {
-        setLoadingProgress({ active: false, message: '', progressVal: 0 });
-        setInvoices([]); // Clear data if user logs out
-        setRemarks([]);
-        setRemarksMap(new Map());
-    }
+    // } else if (!authLoading && !user) {
+    //     setLoadingProgress({ active: false, message: '', progressVal: 0 });
+    //     setInvoices([]); 
+    //     setRemarks([]);
+    //     setRemarksMap(new Map());
+    // }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, user]); // Add user to dependency array
+  }, []); // Removed authLoading, user from dependency array
 
   const handleRefreshData = () => {
-    if (user) { // Only refresh if user is logged in
+    // if (user) { 
         fetchData(true);
-    } else {
-        toast({ title: "נדרשת התחברות", description: "יש להתחבר למערכת על מנת לרענן נתונים."});
-    }
+    // } else {
+    //     toast({ title: "נדרשת התחברות", description: "יש להתחבר למערכת על מנת לרענן נתונים."});
+    // }
   };
 
   const metrics = useMemo((): DashboardMetrics => {
@@ -189,42 +189,42 @@ export default function DashboardPage() {
     };
   }, [invoices, remarksMap]);
 
-  if (authLoading) {
-    return (
-      <ResponsiveAppLayout 
-        menuItems={menuItems} 
-        appName="Priority Connect"
-        logoSrc="https://placehold.co/64x64.png"
-        data-ai-hint="logo abstract"
-      >
-        <div className="flex justify-center items-center h-screen">
-          <LoadingSpinner size={48} />
-          <p className="ml-4 rtl:mr-4">טוען נתוני משתמש...</p>
-        </div>
-      </ResponsiveAppLayout>
-    );
-  }
+  // if (authLoading) {
+  //   return (
+  //     <ResponsiveAppLayout 
+  //       menuItems={menuItems} 
+  //       appName="Priority Connect"
+  //       logoSrc="https://placehold.co/64x64.png"
+  //       data-ai-hint="logo abstract"
+  //     >
+  //       <div className="flex justify-center items-center h-screen">
+  //         <LoadingSpinner size={48} />
+  //         <p className="ml-4 rtl:mr-4">טוען נתוני משתמש...</p>
+  //       </div>
+  //     </ResponsiveAppLayout>
+  //   );
+  // }
   
-  if (!user) {
-    return (
-       <ResponsiveAppLayout 
-        menuItems={menuItems} 
-        appName="Priority Connect"
-        logoSrc="https://placehold.co/64x64.png"
-        data-ai-hint="logo abstract"
-      >
-        <div className="container mx-auto py-10 px-4 text-center">
-           <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>נדרשת התחברות</AlertTitle>
-            <AlertDescription>
-              יש להתחבר למערכת על מנת לצפות בלוח הבקרה.
-            </AlertDescription>
-          </Alert>
-        </div>
-      </ResponsiveAppLayout>
-    )
-  }
+  // if (!user) {
+  //   return (
+  //      <ResponsiveAppLayout 
+  //       menuItems={menuItems} 
+  //       appName="Priority Connect"
+  //       logoSrc="https://placehold.co/64x64.png"
+  //       data-ai-hint="logo abstract"
+  //     >
+  //       <div className="container mx-auto py-10 px-4 text-center">
+  //          <Alert>
+  //           <AlertCircle className="h-4 w-4" />
+  //           <AlertTitle>נדרשת התחברות</AlertTitle>
+  //           <AlertDescription>
+  //             יש להתחבר למערכת על מנת לצפות בלוח הבקרה.
+  //           </AlertDescription>
+  //         </Alert>
+  //       </div>
+  //     </ResponsiveAppLayout>
+  //   )
+  // }
 
   if (error && !loadingProgress.active && invoices.length === 0) { 
     return (
