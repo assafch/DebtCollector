@@ -47,30 +47,30 @@ interface InvoiceDataTableProps {
 }
 
 interface ColumnDefinition {
-  key: keyof Invoice | keyof InvoiceRemark | string; 
+  key: keyof Invoice | keyof InvoiceRemark | string;
   label: string;
   isSortable?: boolean;
-  isRemarkField?: boolean; 
-  className?: string; 
+  isRemarkField?: boolean;
+  className?: string;
 }
 
 const columnConfiguration: ColumnDefinition[] = [
   { key: "actions", label: "פעולות", isSortable: false, className: "min-w-[80px] text-center" },
-  { key: "follow_up_date", label: "תאריך מעקב", isSortable: true, isRemarkField: true, className: "min-w-[180px]" },
-  { key: "text", label: "הערות", isSortable: false, isRemarkField: true, className: "min-w-[250px]" },
-  { key: "status_date", label: "תאריך סטטוס", isSortable: true, isRemarkField: true, className: "min-w-[180px]" },
-  { key: "payment_status", label: "סטטוס תשלום", isSortable: true, isRemarkField: true, className: "min-w-[180px]" },
-  { key: "SUM", label: "סכום", isSortable: true, className: "min-w-[100px] text-right" }, 
-  { key: "FNCDATE", label: "תאריך פרעון", isSortable: true, className: "min-w-[100px]" },
-  { key: "CURDATE", label: "תאריך חשבונית", isSortable: true, className: "min-w-[100px]" },
-  { key: "IVNUM", label: "מספר חשבונית", isSortable: true, className: "min-w-[120px]" },
-  { key: "ACCNAME", label: "שם לקוח", isSortable: true, className: "min-w-[180px] sticky right-[220px] bg-card z-20" }, 
-  { key: "ACCDES", label: "מ. לקוח", isSortable: true, className: "min-w-[220px] sticky right-0 bg-card z-20" }, 
+  { key: "follow_up_date", label: "תאריך מעקב", isSortable: true, isRemarkField: true, className: "min-w-[180px] text-right" },
+  { key: "text", label: "הערות", isSortable: false, isRemarkField: true, className: "min-w-[250px] text-right" },
+  { key: "status_date", label: "תאריך סטטוס", isSortable: true, isRemarkField: true, className: "min-w-[180px] text-right" },
+  { key: "payment_status", label: "סטטוס תשלום", isSortable: true, isRemarkField: true, className: "min-w-[180px] text-right" },
+  { key: "SUM", label: "סכום", isSortable: true, className: "min-w-[100px] text-right" },
+  { key: "FNCDATE", label: "תאריך פרעון", isSortable: true, className: "min-w-[100px] text-right" },
+  { key: "CURDATE", label: "תאריך חשבונית", isSortable: true, className: "min-w-[100px] text-right" },
+  { key: "IVNUM", label: "מספר חשבונית", isSortable: true, className: "min-w-[120px] text-right" },
+  { key: "ACCNAME", label: "שם לקוח", isSortable: true, className: "min-w-[180px] sticky right-[220px] bg-card z-20 text-right" },
+  { key: "ACCDES", label: "מ. לקוח", isSortable: true, className: "min-w-[220px] sticky right-0 bg-card z-20 text-right" },
 ].reverse();
 
 
 const defaultRemark = (invoiceId: string): InvoiceRemark => ({
-  id: invoiceId, 
+  id: invoiceId,
   invoiceId,
   status: 'לא שולם',
   createdAt: formatISO(new Date()),
@@ -107,17 +107,17 @@ const calculateGroupSubtotals = (
 };
 
 
-export function InvoiceDataTable({ 
-  invoices, 
+export function InvoiceDataTable({
+  invoices,
   remarksMap,
   onUpdateRemark,
   updatingRemarksIvs,
-  isLoading, 
-  onSort, 
-  sortKey, 
-  sortDirection 
+  isLoading,
+  onSort,
+  sortKey,
+  sortDirection
 }: InvoiceDataTableProps) {
-  
+
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [selectedInvoices, setSelectedInvoices] = useState<Record<string, boolean>>({});
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -135,6 +135,7 @@ export function InvoiceDataTable({
   const expandAllGroups = () => {
     const allExpanded: Record<string, boolean> = {};
     invoices.forEach(inv => {
+      // Group by ACCDES as per current grouping logic
       if (inv.ACCDES) allExpanded[inv.ACCDES] = true;
     });
     setExpandedGroups(allExpanded);
@@ -151,11 +152,13 @@ export function InvoiceDataTable({
     }
     setSelectedInvoices(newSelected);
   };
-  
+
   const handleGroupSelect = (groupKey: string, groupInv: Invoice[], checked: boolean) => {
+     // Ensure groupInv is derived correctly based on ACCDES
+    const invoicesInGroup = invoices.filter(i => i.ACCDES === groupKey);
     setSelectedInvoices(prev => {
       const newSelected = { ...prev };
-      groupInv.forEach(inv => newSelected[inv.IVNUM] = checked);
+      invoicesInGroup.forEach(inv => newSelected[inv.IVNUM] = checked);
       return newSelected;
     });
   };
@@ -163,7 +166,7 @@ export function InvoiceDataTable({
   const handleInvoiceSelect = (invoiceId: string, checked: boolean) => {
     setSelectedInvoices(prev => ({ ...prev, [invoiceId]: checked }));
   };
-  
+
   const handleOpenEditDialog = (invoice: Invoice) => {
     const remark = remarksMap.get(invoice.IVNUM) || defaultRemark(invoice.IVNUM);
     setEditingInvoiceData({ invoice, remark });
@@ -172,21 +175,21 @@ export function InvoiceDataTable({
 
   const handleSaveEditDialog = async () => {
     if (!editingInvoiceData.invoice || !editingInvoiceData.remark) return;
-    
+
     const { id, invoiceId, ...updatePayload } = editingInvoiceData.remark;
 
     await onUpdateRemark(editingInvoiceData.invoice.IVNUM, updatePayload as Partial<InvoiceRemark>);
     setIsEditDialogOpen(false);
     setEditingInvoiceData({invoice: null, remark: null});
   };
-  
+
   const handleEditDialogInputChange = (field: keyof InvoiceRemark, value: string | PaymentStatus | Date | undefined) => {
     if (editingInvoiceData.remark) {
       let processedValue = value;
       if ((field === 'status_date' || field === 'follow_up_date') && value instanceof Date) {
         processedValue = formatISO(value);
       } else if ((field === 'status_date' || field === 'follow_up_date') && value === undefined){
-        processedValue = undefined; 
+        processedValue = undefined;
       }
 
       setEditingInvoiceData(prev => ({
@@ -194,7 +197,7 @@ export function InvoiceDataTable({
         remark: {
           ...prev.remark!,
           [field]: processedValue,
-          ...(field === 'status' && !prev.remark!.status_date && { status_date: formatISO(new Date()) }) 
+          ...(field === 'status' && !prev.remark!.status_date && { status_date: formatISO(new Date()) })
         }
       }));
     }
@@ -211,7 +214,7 @@ export function InvoiceDataTable({
     if (isLoading && invoices.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={columnConfiguration.length + 1} className="h-24 text-center"> 
+          <TableCell colSpan={columnConfiguration.length + 1} className="h-24 text-center">
             <div className="flex justify-center items-center">
                <LoadingSpinner size={32} />
             </div>
@@ -230,71 +233,72 @@ export function InvoiceDataTable({
     }
 
     const rows: JSX.Element[] = [];
-    let currentCustomerAccName: string | null = null;
+    let currentCustomerAccDesc: string | null = null;
     let currentGroupInvoices: Invoice[] = [];
 
-    invoices.forEach((invoice) => { 
-      const customerAccName = invoice.ACCDES; 
+    invoices.forEach((invoice, idx) => {
+      const customerAccDesc = invoice.ACCDES; // Grouping by ACCDES
 
-      if (customerAccName !== currentCustomerAccName) {
-        if (currentCustomerAccName !== null && currentGroupInvoices.length > 0) {
-          
+      if (customerAccDesc !== currentCustomerAccDesc) {
+        // Render subtotal for previous group if it exists
+        if (currentCustomerAccDesc !== null && currentGroupInvoices.length > 0) {
           const subtotals = calculateGroupSubtotals(currentGroupInvoices, remarksMap);
           rows.push(
-            <TableRow key={`subtotal-${currentCustomerAccName}`} className="bg-muted/50 font-semibold">
-              <TableCell 
-                colSpan={2} 
-                className="text-right px-2 py-3 sticky right-0 bg-muted/50 z-10" 
-                style={{ right: '0px' }}
+            <TableRow key={`subtotal-${currentCustomerAccDesc}`} className="bg-muted/50 font-semibold">
+              <TableCell
+                colSpan={2}
+                className="text-right px-2 py-3 sticky right-0 bg-muted/50 z-10"
+                style={{ right: '0px' }} // Adjusted for checkbox column
               >
-                 סה"כ {currentCustomerAccName}:
+                 סה"כ {currentCustomerAccDesc}:
               </TableCell>
-              
-              <TableCell className="sticky right-[220px] bg-muted/50 z-10 text-right"></TableCell>
-              <TableCell className="text-right"></TableCell> 
-              <TableCell className="text-right"></TableCell> 
-              <TableCell className="text-right"></TableCell> 
+              <TableCell className="sticky right-[220px] bg-muted/50 z-10 text-right"></TableCell> {/* Placeholder for ACCNAME */}
+              <TableCell className="text-right"></TableCell> {/* IVNUM */}
+              <TableCell className="text-right"></TableCell> {/* CURDATE */}
+              <TableCell className="text-right"></TableCell> {/* FNCDATE */}
               <TableCell className="text-right px-2 py-3">{formatCurrency(subtotals.totalAmount)} ({subtotals.totalCount} חשב')</TableCell>
               <TableCell className="text-right px-2 py-3 text-destructive">{formatCurrency(subtotals.openAmount)} ({subtotals.openCount} פתוחות)</TableCell>
-              <TableCell colSpan={columnConfiguration.length - 8} className="text-right"></TableCell> 
+              <TableCell colSpan={columnConfiguration.length - 8} className="text-right"></TableCell>
             </TableRow>
           );
         }
-        
-        const isGroupSelected = currentGroupInvoices.length > 0 && currentGroupInvoices.every(inv => selectedInvoices[inv.IVNUM]);
+
+        // Start new group
+        currentCustomerAccDesc = customerAccDesc;
+        currentGroupInvoices = []; // Reset for new group
+
+        // Group header row
         rows.push(
-          <TableRow 
-            key={`header-${customerAccName}`} 
+          <TableRow
+            key={`header-${customerAccDesc}-${idx}`} // Added idx for more unique key
             className="bg-secondary/70 text-secondary-foreground hover:bg-secondary/90"
           >
             <TableCell className="px-2 py-2 sticky right-0 bg-secondary/70 z-10 w-12 text-center">
                 <Checkbox
-                  checked={currentGroupInvoices.every(inv => selectedInvoices[inv.IVNUM]) && currentGroupInvoices.length > 0}
-                  onCheckedChange={(checked) => handleGroupSelect(customerAccName, invoices.filter(i => i.ACCDES === customerAccName), !!checked)}
-                  aria-label={`בחר את כל החשבוניות של ${customerAccName}`}
+                  checked={invoices.filter(i => i.ACCDES === customerAccDesc).every(inv => selectedInvoices[inv.IVNUM]) && invoices.filter(i => i.ACCDES === customerAccDesc).length > 0}
+                  onCheckedChange={(checked) => handleGroupSelect(customerAccDesc, invoices.filter(i => i.ACCDES === customerAccDesc), !!checked)}
+                  aria-label={`בחר את כל החשבוניות של ${customerAccDesc}`}
                 />
             </TableCell>
-            <TableCell 
+            <TableCell
               className="text-right font-bold px-2 py-2 text-lg sticky right-[48px] bg-secondary/70 z-10 cursor-pointer"
-              onClick={() => toggleGroup(customerAccName)}
-              colSpan={columnConfiguration.length} 
+              onClick={() => toggleGroup(customerAccDesc)}
+              colSpan={columnConfiguration.length}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
-                    {expandedGroups[customerAccName] ? <ChevronDownIcon className="h-5 w-5 mr-2 rtl:ml-2 rtl:mr-0" /> : <ChevronRightIcon className="h-5 w-5 mr-2 rtl:ml-2 rtl:mr-0" />}
-                    {customerAccName} (לקוח: {invoice.ACCNAME})
+                    {expandedGroups[customerAccDesc] ? <ChevronDownIcon className="h-5 w-5 mr-2 rtl:ml-2 rtl:mr-0" /> : <ChevronRightIcon className="h-5 w-5 mr-2 rtl:ml-2 rtl:mr-0" />}
+                    {customerAccDesc} (לקוח: {invoice.ACCNAME})
                 </div>
               </div>
             </TableCell>
           </TableRow>
         );
-        currentCustomerAccName = customerAccName;
-        currentGroupInvoices = [];
       }
 
       currentGroupInvoices.push(invoice);
 
-      if (expandedGroups[customerAccName]) {
+      if (expandedGroups[customerAccDesc]) {
         const remark = remarksMap.get(invoice.IVNUM) || defaultRemark(invoice.IVNUM);
         const isUpdatingThisRemark = updatingRemarksIvs.has(invoice.IVNUM);
 
@@ -310,7 +314,9 @@ export function InvoiceDataTable({
             {columnConfiguration.map((col) => {
               let displayData: React.ReactNode;
               const isSticky = col.key === "ACCDES" || col.key === "ACCNAME";
-              const stickyOffset = col.key === "ACCDES" ? "48px" : col.key === "ACCNAME" ? "268px" : undefined; 
+               // ACCDES is right-most (0px), ACCNAME is to its left.
+              const stickyOffset = col.key === "ACCDES" ? "48px" : col.key === "ACCNAME" ? "268px" : undefined;
+
 
               if (col.key === "actions") {
                 displayData = (
@@ -335,7 +341,7 @@ export function InvoiceDataTable({
                       <SelectContent>
                         {PAYMENT_STATUS_OPTIONS.map(opt => (
                           <SelectItem key={opt.value} value={opt.value}>
-                            <Badge variant={opt.badgeVariant} className="mr-2 rtl:ml-2 rtl:mr-0 w-3 h-3 p-0 rounded-full" /> 
+                            <Badge variant={opt.badgeVariant} className="mr-2 rtl:ml-2 rtl:mr-0 w-3 h-3 p-0 rounded-full" />
                             {opt.label}
                           </SelectItem>
                         ))}
@@ -361,8 +367,8 @@ export function InvoiceDataTable({
                       defaultValue={remark.text || ""}
                       onBlur={(e) => onUpdateRemark(invoice.IVNUM, { text: e.target.value })}
                       placeholder="הזן הערה..."
-                      className="min-w-[200px] text-xs h-auto py-1 px-2 text-right" 
-                      rows={1} 
+                      className="min-w-[200px] text-xs h-auto py-1 px-2 text-right"
+                      rows={1}
                       disabled={isUpdatingThisRemark}
                     />
                   );
@@ -392,9 +398,9 @@ export function InvoiceDataTable({
                    displayData = cellData === null || cellData === undefined ? "" : String(cellData);
                 }
               }
-              
+
               return (
-                <TableCell 
+                <TableCell
                   key={`${invoice.IVNUM}-${col.key}`}
                   className={`px-2 py-1.5 text-right text-xs ${col.className || ''} ${isSticky ? 'bg-card' : 'bg-background dark:bg-card'}`}
                   style={isSticky ? { position: 'sticky', right: stickyOffset, zIndex: 10 } : {}}
@@ -408,21 +414,22 @@ export function InvoiceDataTable({
       }
     });
 
-    if (currentCustomerAccName !== null && currentGroupInvoices.length > 0) {
+    // Render subtotal for the last group
+    if (currentCustomerAccDesc !== null && currentGroupInvoices.length > 0) {
       const subtotals = calculateGroupSubtotals(currentGroupInvoices, remarksMap);
       rows.push(
-        <TableRow key={`subtotal-${currentCustomerAccName}-final`} className="bg-muted/50 font-semibold">
-              <TableCell 
-                colSpan={2} 
+        <TableRow key={`subtotal-${currentCustomerAccDesc}-final`} className="bg-muted/50 font-semibold">
+              <TableCell
+                colSpan={2}
                 className="text-right px-2 py-3 sticky right-0 bg-muted/50 z-10"
-                style={{ right: '0px' }}
+                style={{ right: '0px' }} // Adjusted for checkbox column
               >
-                 סה"כ {currentCustomerAccName}:
+                 סה"כ {currentCustomerAccDesc}:
               </TableCell>
-              <TableCell className="sticky right-[220px] bg-muted/50 z-10 text-right"></TableCell>
-              <TableCell className="text-right"></TableCell> 
-              <TableCell className="text-right"></TableCell> 
-              <TableCell className="text-right"></TableCell> 
+              <TableCell className="sticky right-[220px] bg-muted/50 z-10 text-right"></TableCell> {/* Placeholder for ACCNAME */}
+              <TableCell className="text-right"></TableCell> {/* IVNUM */}
+              <TableCell className="text-right"></TableCell> {/* CURDATE */}
+              <TableCell className="text-right"></TableCell> {/* FNCDATE */}
               <TableCell className="text-right px-2 py-3">{formatCurrency(subtotals.totalAmount)} ({subtotals.totalCount} חשב')</TableCell>
               <TableCell className="text-right px-2 py-3 text-destructive">{formatCurrency(subtotals.openAmount)} ({subtotals.openCount} פתוחות)</TableCell>
               <TableCell colSpan={columnConfiguration.length - 8} className="text-right"></TableCell>
@@ -460,7 +467,7 @@ export function InvoiceDataTable({
         </div>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[calc(100vh-300px)] w-full rounded-md border"> 
+        <ScrollArea className="h-[calc(100vh-300px)] w-full rounded-md border" dir="rtl">
           <Table>
             <TableCaption className="py-4">
               {isLoading && invoices.length === 0
@@ -479,13 +486,14 @@ export function InvoiceDataTable({
                     />
                 </TableHead>
                 {columnConfiguration.map((col) => (
-                  <TableHead 
-                    key={col.key} 
+                  <TableHead
+                    key={col.key}
                     className={`whitespace-nowrap text-right px-2 py-3 ${col.className || ''} ${col.isSortable ? 'cursor-pointer' : ''} ${col.key === "ACCDES" || col.key === "ACCNAME" ? 'bg-card' : ''}`}
                     onClick={col.isSortable ? () => onSort(col.key) : undefined}
+                     // Adjust sticky positioning for ACCDES (rightmost after checkbox) and ACCNAME
                     style={col.key === "ACCDES" ? { position: 'sticky', right: '48px', zIndex: 31 } : col.key === "ACCNAME" ? { position: 'sticky', right: '268px', zIndex: 31 } : {}}
                   >
-                     <div className="flex items-center justify-end rtl:justify-start"> 
+                     <div className="flex items-center justify-end rtl:justify-start">
                         <span className="text-right">{col.label}</span>
                         {col.isSortable && renderSortIcon(col.key)}
                     </div>
