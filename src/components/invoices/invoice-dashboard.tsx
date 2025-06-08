@@ -144,76 +144,112 @@ export function InvoiceDashboard({
 
   const sortedAndGroupedInvoices = useMemo(() => {
     if (!sortConfig.key) {
-      return filteredInvoices;
+      const defaultSorted = [...filteredInvoices].sort((a, b) => (a.ACCDES || '').localeCompare(b.ACCDES || '', 'he'));
+      return defaultSorted;
     }
-
-    const sortableInvoices = [...filteredInvoices];
-
-    sortableInvoices.sort((a, b) => {
-      let comparison = 0;
-      
-      // Primary sort: always by Customer Name (ACCDES) for grouping, unless sorting by ACCDES/ACCNAME itself
-      if (sortConfig.key !== 'ACCDES' && sortConfig.key !== 'ACCNAME') {
+  
+    if (sortConfig.key === 'SUM') {
+      const customerGroups: Record<string, Invoice[]> = {};
+      filteredInvoices.forEach(invoice => {
+        const customerKey = invoice.ACCDES || 'UNKNOWN_CUSTOMER';
+        if (!customerGroups[customerKey]) {
+          customerGroups[customerKey] = [];
+        }
+        customerGroups[customerKey].push(invoice);
+      });
+  
+      const customerGroupData = Object.entries(customerGroups).map(([customerKey, groupInvoices]) => {
+        let totalOpenAmount = 0;
+        groupInvoices.forEach(inv => {
+          const remark = remarksMap.get(inv.IVNUM);
+          const status = remark?.status || 'לא שולם';
+          if (status !== 'שולם' && status !== 'בוטל') {
+            totalOpenAmount += inv.SUM;
+          }
+        });
+  
+        const sortedInvoicesInGroup = [...groupInvoices].sort((a, b) => {
+          const comparison = (a.SUM || 0) - (b.SUM || 0);
+          return sortConfig.direction === 'asc' ? comparison : -comparison;
+        });
+  
+        return {
+          customerKey,
+          totalOpenAmount,
+          invoices: sortedInvoicesInGroup,
+        };
+      });
+  
+      customerGroupData.sort((a, b) => {
+        const comparison = a.totalOpenAmount - b.totalOpenAmount;
+        return sortConfig.direction === 'asc' ? comparison : -comparison;
+      });
+  
+      return customerGroupData.flatMap(group => group.invoices);
+  
+    } else {
+      // Existing logic for other sort keys
+      const sortableInvoices = [...filteredInvoices];
+      sortableInvoices.sort((a, b) => {
+        let comparison = 0;
+  
+        // Primary sort: Customer Name (ACCDES) - always apply for grouping
         const customerA = a.ACCDES || '';
         const customerB = b.ACCDES || '';
         comparison = customerA.localeCompare(customerB, 'he', { sensitivity: 'base' });
-        if (comparison !== 0) {
-          return sortConfig.direction === 'asc' ? comparison : -comparison; // Early return if customer names differ for primary group sort
+  
+        if (comparison === 0) { // If same customer, then sort by the specified key
+          let aValue: any;
+          let bValue: any;
+  
+          if (sortConfig.key === 'payment_status') {
+            const remarkA = remarksMap.get(a.IVNUM);
+            const remarkB = remarksMap.get(b.IVNUM);
+            aValue = remarkA?.status || 'לא שולם';
+            bValue = remarkB?.status || 'לא שולם';
+          } else if (sortConfig.key === 'status_date') {
+            const remarkA = remarksMap.get(a.IVNUM);
+            const remarkB = remarksMap.get(b.IVNUM);
+            aValue = remarkA?.status_date ? new Date(remarkA.status_date).getTime() : 0;
+            bValue = remarkB?.status_date ? new Date(remarkB.status_date).getTime() : 0;
+          } else if (sortConfig.key === 'follow_up_date') {
+            const remarkA = remarksMap.get(a.IVNUM);
+            const remarkB = remarksMap.get(b.IVNUM);
+            aValue = remarkA?.follow_up_date ? new Date(remarkA.follow_up_date).getTime() : 0;
+            bValue = remarkB?.follow_up_date ? new Date(remarkB.follow_up_date).getTime() : 0;
+          } else {
+            aValue = a[sortConfig.key as keyof Invoice];
+            bValue = b[sortConfig.key as keyof Invoice];
+          }
+          
+          let secondaryComparison = 0;
+          if (aValue === null || aValue === undefined) secondaryComparison = 1;
+          else if (bValue === null || bValue === undefined) secondaryComparison = -1;
+          else if (typeof aValue === 'number' && typeof bValue === 'number') {
+            secondaryComparison = aValue - bValue;
+          } else if (typeof aValue === 'string' && typeof bValue === 'string') {
+            if (sortConfig.key === 'CURDATE' || sortConfig.key === 'FNCDATE') {
+              const dateAVal = aValue.split("T")[0];
+              const dateBVal = bValue.split("T")[0];
+              const dateA = dateAVal ? new Date(dateAVal).getTime() : 0;
+              const dateB = dateBVal ? new Date(dateBVal).getTime() : 0;
+  
+              if (isNaN(dateA) && isNaN(dateB)) secondaryComparison = 0;
+              else if (isNaN(dateA)) secondaryComparison = 1; 
+              else if (isNaN(dateB)) secondaryComparison = -1;
+              else secondaryComparison = dateA - dateB;
+            } else { 
+              secondaryComparison = aValue.localeCompare(bValue, 'he', { sensitivity: 'base' });
+            }
+          } else {
+            secondaryComparison = String(aValue).localeCompare(String(bValue), 'he', { sensitivity: 'base' });
+          }
+          comparison = secondaryComparison;
         }
-      }
-      
-      // Secondary sort (or primary if by customer field)
-      let aValue: any;
-      let bValue: any;
-
-      if (sortConfig.key === 'payment_status') {
-        const remarkA = remarksMap.get(a.IVNUM);
-        const remarkB = remarksMap.get(b.IVNUM);
-        aValue = remarkA?.status || 'לא שולם';
-        bValue = remarkB?.status || 'לא שולם';
-      } else if (sortConfig.key === 'status_date') {
-        const remarkA = remarksMap.get(a.IVNUM);
-        const remarkB = remarksMap.get(b.IVNUM);
-        aValue = remarkA?.status_date ? new Date(remarkA.status_date).getTime() : 0;
-        bValue = remarkB?.status_date ? new Date(remarkB.status_date).getTime() : 0;
-      } else if (sortConfig.key === 'follow_up_date') {
-        const remarkA = remarksMap.get(a.IVNUM);
-        const remarkB = remarksMap.get(b.IVNUM);
-        aValue = remarkA?.follow_up_date ? new Date(remarkA.follow_up_date).getTime() : 0;
-        bValue = remarkB?.follow_up_date ? new Date(remarkB.follow_up_date).getTime() : 0;
-      }
-       else {
-        aValue = a[sortConfig.key as keyof Invoice];
-        bValue = b[sortConfig.key as keyof Invoice];
-      }
-      
-      let secondaryComparison = 0;
-      if (aValue === null || aValue === undefined) secondaryComparison = 1;
-      else if (bValue === null || bValue === undefined) secondaryComparison = -1;
-      else if (typeof aValue === 'number' && typeof bValue === 'number') {
-        secondaryComparison = aValue - bValue;
-      } else if (typeof aValue === 'string' && typeof bValue === 'string') {
-        if (sortConfig.key === 'CURDATE' || sortConfig.key === 'FNCDATE') {
-          const dateA = new Date(aValue.split("T")[0] || 0).getTime();
-          const dateB = new Date(bValue.split("T")[0] || 0).getTime();
-          if (isNaN(dateA) && isNaN(dateB)) secondaryComparison = 0;
-          else if (isNaN(dateA)) secondaryComparison = 1;
-          else if (isNaN(dateB)) secondaryComparison = -1;
-          else secondaryComparison = dateA - dateB;
-        } else { 
-          secondaryComparison = aValue.localeCompare(bValue, 'he', { sensitivity: 'base' });
-        }
-      } else {
-        secondaryComparison = String(aValue).localeCompare(String(bValue), 'he', { sensitivity: 'base' });
-      }
-      
-      // If primary sort by customer was already done and was equal, use secondary.
-      // Or if sorting by customer field, this is the primary comparison.
-      comparison = secondaryComparison;
-
-      return sortConfig.direction === 'asc' ? comparison : -comparison;
-    });
-    return sortableInvoices;
+        return sortConfig.direction === 'asc' ? comparison : -comparison;
+      });
+      return sortableInvoices;
+    }
   }, [filteredInvoices, sortConfig, remarksMap]);
   
   useEffect(() => {
