@@ -95,3 +95,13 @@ export interface DashboardMetrics {
   amountDueThisWeek: number;
   avgPaymentTime?: string; // Placeholder
 }
+
+export interface Filters {
+  customerName: string;
+  invoiceNumber: string;
+  startDate: Date | undefined;
+  endDate: Date | undefined;
+  fncStartDate: Date | undefined;
+  fncEndDate: Date | undefined;
+  paymentStatus?: PaymentStatus[]; // Changed to array for multiselect
+}

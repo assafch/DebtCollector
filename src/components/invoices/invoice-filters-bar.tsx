@@ -11,6 +11,8 @@ export interface Filters {
   invoiceNumber: string;
   startDate: Date | undefined;
   endDate: Date | undefined;
+  fncStartDate: Date | undefined;
+  fncEndDate: Date | undefined;
 }
 
 interface InvoiceFiltersBarProps {
@@ -71,6 +73,24 @@ export function InvoiceFiltersBar({ filters, onFilterChange, onClearFilters, isL
             <DatePicker
               date={filters.endDate}
               setDate={(date) => handleInputChange("endDate", date)}
+              placeholder="Select end date"
+              className="bg-background"
+            />
+          </div>
+           <div className="space-y-1">
+            <Label htmlFor="fncStartDate">Start Date (FNCDATE)</Label>
+            <DatePicker
+              date={filters.fncStartDate}
+              setDate={(date) => handleInputChange("fncStartDate", date)}
+              placeholder="Select start date"
+              className="bg-background"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="fncEndDate">End Date (FNCDATE)</Label>
+            <DatePicker
+              date={filters.fncEndDate}
+              setDate={(date) => handleInputChange("fncEndDate", date)}
               placeholder="Select end date"
               className="bg-background"
             />

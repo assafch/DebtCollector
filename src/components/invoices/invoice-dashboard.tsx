@@ -27,6 +27,8 @@ const initialFiltersState: Filters = {
   invoiceNumber: "",
   startDate: undefined,
   endDate: undefined,
+  fncStartDate: undefined,
+  fncEndDate: undefined,
 };
 
 export function InvoiceDashboard({ 
@@ -133,6 +135,35 @@ export function InvoiceDashboard({
           if (!invoiceDateStr) return false;
           const invoiceCurDate = new Date(invoiceDateStr);
           return !isNaN(invoiceCurDate.getTime()) && invoiceCurDate <= endDateWithoutTime;
+        } catch { 
+          return false; 
+        }
+      });
+    }
+
+    // Add filtering for FNCDATE
+    if (filters.fncStartDate) {
+      const fncStartDateWithoutTime = new Date(filters.fncStartDate.setHours(0,0,0,0));
+      invoicesToFilter = invoicesToFilter.filter((invoice) => {
+        try {
+          const invoiceFncDateStr = invoice.FNCDATE?.split("T")[0];
+          if (!invoiceFncDateStr) return false;
+          const invoiceFncDate = new Date(invoiceFncDateStr);
+          return !isNaN(invoiceFncDate.getTime()) && invoiceFncDate >= fncStartDateWithoutTime;
+        } catch { 
+          return false; 
+        }
+      });
+    }
+
+    if (filters.fncEndDate) {
+      const fncEndDateWithoutTime = new Date(filters.fncEndDate.setHours(23,59,59,999));
+      invoicesToFilter = invoicesToFilter.filter((invoice) => {
+        try {
+          const invoiceFncDateStr = invoice.FNCDATE?.split("T")[0];
+          if (!invoiceFncDateStr) return false;
+          const invoiceFncDate = new Date(invoiceFncDateStr);
+          return !isNaN(invoiceFncDate.getTime()) && invoiceFncDate <= fncEndDateWithoutTime;
         } catch { 
           return false; 
         }
