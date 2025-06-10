@@ -1,9 +1,8 @@
-
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import { AlertCircle, CreditCard, Mail, MapPin, Phone, RefreshCw, Search, User, Users, Calendar as CalendarIconLucide, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { AlertCircle, CreditCard, Mail, MapPin, Phone, RefreshCw, Search, User, Users, Calendar as CalendarIconLucide } from 'lucide-react';
 import { ResponsiveAppLayout } from "@/components/layout/responsive-app-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,7 +43,6 @@ export default function CustomersPage() {
   const [isLoading, setIsLoading] = useState<boolean>(true); 
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [isRightPanelVisible, setIsRightPanelVisible] = useState(true);
   const { toast } = useToast();
   // const { user, loading: authLoading } = useAuth(); // Auth temporarily frozen
 
@@ -247,10 +245,6 @@ export default function CustomersPage() {
             <p className="text-muted-foreground">ניהול לקוחות וצפייה בחובות לפי לקוח.</p>
           </div>
           <div className="flex space-x-2 rtl:space-x-reverse">
-            <Button onClick={() => setIsRightPanelVisible(!isRightPanelVisible)} variant="outline" size="sm">
-              {isRightPanelVisible ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
-              <span className="ml-2 rtl:mr-2">{isRightPanelVisible ? "הסתר פאנל" : "הצג פאנל"}</span>
-            </Button>
             <Button onClick={handleRefreshData} disabled={isLoading || isRefreshing} size="sm">
               {isRefreshing ? <LoadingSpinner size={18} className="mr-2 rtl:ml-2 rtl:mr-0" /> : <RefreshCw className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />}
               רענן נתונים
@@ -260,7 +254,7 @@ export default function CustomersPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Pane: Customer List & Search */}
-          <Card className={cn("shadow-lg", isRightPanelVisible ? "lg:col-span-1" : "lg:col-span-3")}>
+          <Card className="shadow-lg lg:col-span-1">
             <CardHeader>
               <CardTitle className="text-xl">רשימת לקוחות</CardTitle>
               <CardDescription>בחר לקוח לצפייה בפרטים.</CardDescription>
@@ -320,8 +314,7 @@ export default function CustomersPage() {
           </Card>
 
           {/* Right Pane: Selected Customer Details & Invoices */}
-          {isRightPanelVisible && (
-            selectedCustomer ? (
+          {selectedCustomer ? (
               <div className="lg:col-span-2 space-y-6">
                 <Card className="shadow-lg">
                   <CardHeader>
@@ -406,8 +399,7 @@ export default function CustomersPage() {
                   <p className="text-lg text-muted-foreground">בחר לקוח מהרשימה להצגת הפרטים.</p>
                 </CardContent>
               </Card>
-            )
-          )}
+            )}
         </div>
       </div>
     </ResponsiveAppLayout>
