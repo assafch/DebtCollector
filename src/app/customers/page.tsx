@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import { AlertCircle, CreditCard, Mail, MapPin, Phone, RefreshCw, Search, User, Users, Calendar as CalendarIconLucide } from 'lucide-react';
+import { AlertCircle, CreditCard, Mail, MapPin, Phone, RefreshCw, Search, User, Users, Calendar as CalendarIconLucide, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { ResponsiveAppLayout } from "@/components/layout/responsive-app-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,7 +25,7 @@ import { PAYMENT_STATUS_OPTIONS } from '@/types/dashboard';
 import { cn, formatDateString, formatCurrency } from "@/lib/utils";
 import type { MenuItemType } from '@/types/layout';
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from '@/context/AuthContext';
+// import { useAuth } from '@/context/AuthContext'; // Auth temporarily frozen
 
 const menuItems: MenuItemType[] = [
   { name: 'Dashboard', iconName: 'LayoutDashboard', path: '/' },
@@ -44,8 +44,9 @@ export default function CustomersPage() {
   const [isLoading, setIsLoading] = useState<boolean>(true); 
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [isRightPanelVisible, setIsRightPanelVisible] = useState(true);
   const { toast } = useToast();
-  // const { user, loading: authLoading } = useAuth(); 
+  // const { user, loading: authLoading } = useAuth(); // Auth temporarily frozen
 
   const loadData = useCallback(async (isManualRefresh = false) => {
     if (isManualRefresh) {
@@ -93,21 +94,21 @@ export default function CustomersPage() {
   }, [toast]);
 
   useEffect(() => {
-    // if (!authLoading && user) { 
+    // if (!authLoading && user) { // Auth temporarily frozen
         loadData(false);
-    // } else if (!authLoading && !user) {
+    // } else if (!authLoading && !user) { // Auth temporarily frozen
     //     setIsLoading(false);
     //     setCustomers([]); 
     //     setAllInvoices([]);
     //     setRemarksMap(new Map());
     // }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Removed authLoading, user from dependency array
+  }, []); 
 
   const handleRefreshData = () => {
-    // if (user) { 
+    // if (user) { // Auth temporarily frozen
         loadData(true);
-    // } else {
+    // } else { // Auth temporarily frozen
     //     toast({ title: "נדרשת התחברות", description: "יש להתחבר למערכת על מנת לרענן נתונים."});
     // }
   };
@@ -158,7 +159,7 @@ export default function CustomersPage() {
     return option ? option.badgeVariant : 'secondary';
   };
   
-  // if (authLoading) {
+  // if (authLoading) { // Auth temporarily frozen
   //   return (
   //     <ResponsiveAppLayout 
   //       menuItems={menuItems} 
@@ -174,7 +175,7 @@ export default function CustomersPage() {
   //   );
   // }
 
-  // if (!user) {
+  // if (!user) { // Auth temporarily frozen
   //    return (
   //      <ResponsiveAppLayout 
   //       menuItems={menuItems} 
@@ -245,15 +246,21 @@ export default function CustomersPage() {
             <h1 className="text-3xl font-bold text-foreground">לקוחות</h1>
             <p className="text-muted-foreground">ניהול לקוחות וצפייה בחובות לפי לקוח.</p>
           </div>
-          <Button onClick={handleRefreshData} disabled={isLoading || isRefreshing}>
-            {isRefreshing ? <LoadingSpinner size={18} className="mr-2 rtl:ml-2 rtl:mr-0" /> : <RefreshCw className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />}
-            רענן נתונים
-          </Button>
+          <div className="flex space-x-2 rtl:space-x-reverse">
+            <Button onClick={() => setIsRightPanelVisible(!isRightPanelVisible)} variant="outline" size="sm">
+              {isRightPanelVisible ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+              <span className="ml-2 rtl:mr-2">{isRightPanelVisible ? "הסתר פאנל" : "הצג פאנל"}</span>
+            </Button>
+            <Button onClick={handleRefreshData} disabled={isLoading || isRefreshing} size="sm">
+              {isRefreshing ? <LoadingSpinner size={18} className="mr-2 rtl:ml-2 rtl:mr-0" /> : <RefreshCw className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />}
+              רענן נתונים
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Pane: Customer List & Search */}
-          <Card className="lg:col-span-1 shadow-lg">
+          <Card className={cn("shadow-lg", isRightPanelVisible ? "lg:col-span-1" : "lg:col-span-3")}>
             <CardHeader>
               <CardTitle className="text-xl">רשימת לקוחות</CardTitle>
               <CardDescription>בחר לקוח לצפייה בפרטים.</CardDescription>
@@ -313,91 +320,93 @@ export default function CustomersPage() {
           </Card>
 
           {/* Right Pane: Selected Customer Details & Invoices */}
-          {selectedCustomer ? (
-            <div className="lg:col-span-2 space-y-6">
-              <Card className="shadow-lg">
-                <CardHeader>
-                  <CardTitle className="text-xl">פרטי לקוח</CardTitle>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
-                  <div className="flex items-start"><User className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0 mt-0.5 text-primary" /><span className="font-medium">שם לקוח:</span><span className="mr-1 rtl:ml-1 rtl:mr-0">{selectedCustomer.name || "-"}</span></div>
-                  <div className="flex items-start"><CreditCard className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0 mt-0.5 text-primary" /><span className="font-medium">מספר לקוח:</span><span className="mr-1 rtl:ml-1 rtl:mr-0">{selectedCustomer.customer_id || "-"}</span></div>
-                  <div className="flex items-start"><Phone className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0 mt-0.5 text-primary" /><span className="font-medium">טלפון:</span><span className="mr-1 rtl:ml-1 rtl:mr-0">{selectedCustomer.phone || "-"}</span></div>
-                  <div className="flex items-start"><Mail className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0 mt-0.5 text-primary" /><span className="font-medium">דוא"ל:</span><span className="mr-1 rtl:ml-1 rtl:mr-0">{selectedCustomer.email || "-"}</span></div>
-                  <div className="flex items-start"><User className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0 mt-0.5 text-primary" /><span className="font-medium">איש קשר:</span><span className="mr-1 rtl:ml-1 rtl:mr-0">{selectedCustomer.contact_person || "-"}</span></div>
-                  <div className="flex items-start"><CalendarIconLucide className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0 mt-0.5 text-primary" /><span className="font-medium">תנאי תשלום:</span><span className="mr-1 rtl:ml-1 rtl:mr-0">{selectedCustomer.payment_terms || "-"}</span></div>
-                  <div className="flex items-start md:col-span-2"><MapPin className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0 mt-0.5 text-primary" /><span className="font-medium">כתובת:</span><span className="mr-1 rtl:ml-1 rtl:mr-0">{selectedCustomer.address || "-"}</span></div>
-                </CardContent>
-              </Card>
+          {isRightPanelVisible && (
+            selectedCustomer ? (
+              <div className="lg:col-span-2 space-y-6">
+                <Card className="shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="text-xl">פרטי לקוח</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+                    <div className="flex items-start"><User className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0 mt-0.5 text-primary" /><span className="font-medium">שם לקוח:</span><span className="mr-1 rtl:ml-1 rtl:mr-0">{selectedCustomer.name || "-"}</span></div>
+                    <div className="flex items-start"><CreditCard className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0 mt-0.5 text-primary" /><span className="font-medium">מספר לקוח:</span><span className="mr-1 rtl:ml-1 rtl:mr-0">{selectedCustomer.customer_id || "-"}</span></div>
+                    <div className="flex items-start"><Phone className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0 mt-0.5 text-primary" /><span className="font-medium">טלפון:</span><span className="mr-1 rtl:ml-1 rtl:mr-0">{selectedCustomer.phone || "-"}</span></div>
+                    <div className="flex items-start"><Mail className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0 mt-0.5 text-primary" /><span className="font-medium">דוא"ל:</span><span className="mr-1 rtl:ml-1 rtl:mr-0">{selectedCustomer.email || "-"}</span></div>
+                    <div className="flex items-start"><User className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0 mt-0.5 text-primary" /><span className="font-medium">איש קשר:</span><span className="mr-1 rtl:ml-1 rtl:mr-0">{selectedCustomer.contact_person || "-"}</span></div>
+                    <div className="flex items-start"><CalendarIconLucide className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0 mt-0.5 text-primary" /><span className="font-medium">תנאי תשלום:</span><span className="mr-1 rtl:ml-1 rtl:mr-0">{selectedCustomer.payment_terms || "-"}</span></div>
+                    <div className="flex items-start md:col-span-2"><MapPin className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0 mt-0.5 text-primary" /><span className="font-medium">כתובת:</span><span className="mr-1 rtl:ml-1 rtl:mr-0">{selectedCustomer.address || "-"}</span></div>
+                  </CardContent>
+                </Card>
 
-              <Card className="shadow-lg">
-                <CardHeader>
-                  <CardTitle className="text-xl">חשבוניות פתוחות ({selectedCustomerInvoices.filter(inv => (remarksMap.get(inv.IVNUM)?.status || 'לא שולם') !== 'שולם').length})</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-[400px] border rounded-md">
-                    <Table>
-                      <TableHeader className="sticky top-0 bg-card z-10">
-                        <TableRow>
-                          <TableHead className="text-right">מס׳ חשבונית</TableHead>
-                          <TableHead className="text-right">תאריך</TableHead>
-                          <TableHead className="text-right">לתשלום עד</TableHead>
-                          <TableHead className="text-right">סכום</TableHead>
-                          <TableHead className="text-right">סטטוס</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {selectedCustomerInvoices.length > 0 ? (
-                          selectedCustomerInvoices.map(invoice => {
-                            const remark = remarksMap.get(invoice.IVNUM);
-                            const status = remark?.status || 'לא שולם';
-                            if (status === 'שולם' || status === 'בוטל') return null; 
-                            return (
-                              <TableRow key={invoice.IVNUM}>
-                                <TableCell className="text-right">{invoice.IVNUM}</TableCell>
-                                <TableCell className="text-right">{formatDateString(invoice.CURDATE)}</TableCell>
-                                <TableCell className="text-right">{formatDateString(invoice.FNCDATE)}</TableCell>
-                                <TableCell className="text-right">{formatCurrency(invoice.SUM)}</TableCell>
-                                <TableCell className="text-right">
-                                  <Badge variant={getPaymentStatusVariant(status)} className="text-xs">
-                                    {status}
-                                  </Badge>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          }).filter(Boolean) 
-                        ) : (
+                <Card className="shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="text-xl">חשבוניות פתוחות ({selectedCustomerInvoices.filter(inv => (remarksMap.get(inv.IVNUM)?.status || 'לא שולם') !== 'שולם').length})</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ScrollArea className="h-[400px] border rounded-md">
+                      <Table>
+                        <TableHeader className="sticky top-0 bg-card z-10">
                           <TableRow>
-                            <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                              אין חשבוניות פתוחות ללקוח זה.
-                            </TableCell>
+                            <TableHead className="text-right">מס׳ חשבונית</TableHead>
+                            <TableHead className="text-right">תאריך</TableHead>
+                            <TableHead className="text-right">לתשלום עד</TableHead>
+                            <TableHead className="text-right">סכום</TableHead>
+                            <TableHead className="text-right">סטטוס</TableHead>
                           </TableRow>
-                        )}
-                         {selectedCustomerInvoices.length > 0 && selectedCustomerInvoices.filter(inv => (remarksMap.get(inv.IVNUM)?.status || 'לא שולם') !== 'שולם' && (remarksMap.get(inv.IVNUM)?.status || 'לא שולם') !== 'בוטל').length === 0 && (
+                        </TableHeader>
+                        <TableBody>
+                          {selectedCustomerInvoices.length > 0 ? (
+                            selectedCustomerInvoices.map(invoice => {
+                              const remark = remarksMap.get(invoice.IVNUM);
+                              const status = remark?.status || 'לא שולם';
+                              if (status === 'שולם' || status === 'בוטל') return null; 
+                              return (
+                                <TableRow key={invoice.IVNUM}>
+                                  <TableCell className="text-right">{invoice.IVNUM}</TableCell>
+                                  <TableCell className="text-right">{formatDateString(invoice.CURDATE)}</TableCell>
+                                  <TableCell className="text-right">{formatDateString(invoice.FNCDATE)}</TableCell>
+                                  <TableCell className="text-right">{formatCurrency(invoice.SUM)}</TableCell>
+                                  <TableCell className="text-right">
+                                    <Badge variant={getPaymentStatusVariant(status)} className="text-xs">
+                                      {status}
+                                    </Badge>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            }).filter(Boolean) 
+                          ) : (
                             <TableRow>
-                                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                              <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                                 אין חשבוניות פתוחות ללקוח זה.
-                                </TableCell>
+                              </TableCell>
                             </TableRow>
-                        )}
-                      </TableBody>
-                      <TableCaption>
-                        {selectedCustomerInvoices.filter(inv => (remarksMap.get(inv.IVNUM)?.status || 'לא שולם') !== 'שולם' && (remarksMap.get(inv.IVNUM)?.status || 'לא שולם') !== 'בוטל').length > 0 
-                          ? `מציג ${selectedCustomerInvoices.filter(inv => (remarksMap.get(inv.IVNUM)?.status || 'לא שולם') !== 'שולם' && (remarksMap.get(inv.IVNUM)?.status || 'לא שולם') !== 'בוטל').length} חשבוניות פתוחות.`
-                          : ""}
-                      </TableCaption>
-                    </Table>
-                  </ScrollArea>
+                          )}
+                           {selectedCustomerInvoices.length > 0 && selectedCustomerInvoices.filter(inv => (remarksMap.get(inv.IVNUM)?.status || 'לא שולם') !== 'שולם' && (remarksMap.get(inv.IVNUM)?.status || 'לא שולם') !== 'בוטל').length === 0 && (
+                              <TableRow>
+                                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                                  אין חשבוניות פתוחות ללקוח זה.
+                                  </TableCell>
+                              </TableRow>
+                          )}
+                        </TableBody>
+                        <TableCaption>
+                          {selectedCustomerInvoices.filter(inv => (remarksMap.get(inv.IVNUM)?.status || 'לא שולם') !== 'שולם' && (remarksMap.get(inv.IVNUM)?.status || 'לא שולם') !== 'בוטל').length > 0 
+                            ? `מציג ${selectedCustomerInvoices.filter(inv => (remarksMap.get(inv.IVNUM)?.status || 'לא שולם') !== 'שולם' && (remarksMap.get(inv.IVNUM)?.status || 'לא שולם') !== 'בוטל').length} חשבוניות פתוחות.`
+                            : ""}
+                        </TableCaption>
+                      </Table>
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              <Card className="lg:col-span-2 flex items-center justify-center h-full min-h-[300px] shadow-lg">
+                <CardContent className="text-center p-6">
+                  <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-lg text-muted-foreground">בחר לקוח מהרשימה להצגת הפרטים.</p>
                 </CardContent>
               </Card>
-            </div>
-          ) : (
-            <Card className="lg:col-span-2 flex items-center justify-center h-full min-h-[300px] shadow-lg">
-              <CardContent className="text-center p-6">
-                <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-lg text-muted-foreground">בחר לקוח מהרשימה להצגת הפרטים.</p>
-              </CardContent>
-            </Card>
+            )
           )}
         </div>
       </div>
