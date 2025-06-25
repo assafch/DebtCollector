@@ -480,29 +480,30 @@ export function InvoiceDataTable({
                 ? "לא נמצאו חשבוניות התואמות את החיפוש."
                 : `מציג ${invoices.length} חשבוניות.`}
             </TableCaption>
-            <TableHeader className="sticky top-0 bg-card z-10 shadow-sm"> {/* Reduced z-index, sticky positioning removed from individual THs */}
+            <TableHeader className="sticky top-0 bg-card z-10 shadow-sm">
               <TableRow>
-                <TableHead className="w-12 px-2 py-3 text-center">
-                    <Checkbox
-                        checked={allFilteredInvoicesSelected}
-                        onCheckedChange={(checked) => handleSelectAllFiltered(!!checked)}
-                        aria-label="בחר את כל החשבוניות"
-                    />
-                </TableHead>
-                <TableHead className="w-12 px-2 py-3 text-center"> {/* Header for expander column */}
-                </TableHead>
-                {columnConfiguration.map((col) => (
-                  <TableHead
-                    key={col.key}
-                    className={`whitespace-nowrap text-right px-2 py-3 ${col.className || ''} ${col.isSortable ? 'cursor-pointer' : ''}`}
-                    onClick={col.isSortable ? () => onSort(col.key) : undefined}
-                  >
-                     <div className="flex items-center justify-end rtl:justify-start">
-                        <span className="text-right">{col.label}</span>
-                        {col.isSortable && renderSortIcon(col.key)}
-                    </div>
+                <>
+                  <TableHead className="w-12 px-2 py-3 text-center">
+                      <Checkbox
+                          checked={allFilteredInvoicesSelected}
+                          onCheckedChange={(checked) => handleSelectAllFiltered(!!checked)}
+                          aria-label="בחר את כל החשבוניות"
+                      />
                   </TableHead>
-                ))}
+                  <TableHead className="w-12 px-2 py-3 text-center" />
+                  {columnConfiguration.map((col) => (
+                    <TableHead
+                      key={col.key}
+                      className={`whitespace-nowrap text-right px-2 py-3 ${col.className || ''} ${col.isSortable ? 'cursor-pointer' : ''}`}
+                      onClick={col.isSortable ? () => onSort(col.key) : undefined}
+                    >
+                       <div className="flex items-center justify-end rtl:justify-start">
+                          <span className="text-right">{col.label}</span>
+                          {col.isSortable && renderSortIcon(col.key)}
+                      </div>
+                    </TableHead>
+                  ))}
+                </>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -581,5 +582,3 @@ export function InvoiceDataTable({
     </Card>
   );
 }
-
-    
