@@ -22,11 +22,11 @@ import { useAuth } from '@/context/AuthContext';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const menuItems: MenuItemType[] = [
-  { name: 'Dashboard', iconName: 'LayoutDashboard', path: '/' },
-  { name: 'Invoices', iconName: 'FileText', path: '/invoices' },
-  { name: 'Customers', iconName: 'Users', path: '/customers' },
-  { name: 'Phonebook', iconName: 'PhoneCall', path: '/phonebook' },
-  { name: 'Settings', iconName: 'SettingsIcon', path: '/settings' },
+  { name: 'לוח בקרה', iconName: 'LayoutDashboard', path: '/' },
+  { name: 'חשבוניות', iconName: 'FileText', path: '/invoices' },
+  { name: 'לקוחות', iconName: 'Users', path: '/customers' },
+  { name: 'ספר טלפונים', iconName: 'PhoneCall', path: '/phonebook' },
+  { name: 'הגדרות', iconName: 'SettingsIcon', path: '/settings' },
 ];
 
 export default function InvoicesPage() {

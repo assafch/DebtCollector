@@ -60,7 +60,7 @@ export function InvoiceDashboard({
       setError(initialError); 
       toast({
         variant: "destructive",
-        title: "Error loading invoices",
+        title: "שגיאה בטעינת חשבוניות",
         description: initialError,
       });
     } else {
@@ -182,7 +182,7 @@ export function InvoiceDashboard({
     if (sortConfig.key === 'SUM') {
       const customerGroups: Record<string, Invoice[]> = {};
       filteredInvoices.forEach(invoice => {
-        const customerKey = invoice.ACCDES || 'UNKNOWN_CUSTOMER';
+        const customerKey = invoice.ACCDES || 'לקוח לא ידוע';
         if (!customerGroups[customerKey]) {
           customerGroups[customerKey] = [];
         }
@@ -342,4 +342,3 @@ export function InvoiceDashboard({
     </div>
   );
 }
-

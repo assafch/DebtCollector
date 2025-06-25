@@ -32,16 +32,16 @@ export function InvoiceFiltersBar({ filters, onFilterChange, onClearFilters, isL
       <CardHeader>
         <CardTitle className="flex items-center text-xl">
           <Search className="mr-2 h-5 w-5 text-primary" />
-          Filter Invoices
+          סינון חשבוניות
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="space-y-1">
-            <Label htmlFor="customerName">Customer Name</Label>
+            <Label htmlFor="customerName">שם לקוח</Label>
             <Input
               id="customerName"
-              placeholder="e.g. John Doe"
+              placeholder="לדוגמה: ישראל ישראלי"
               value={filters.customerName}
               onChange={(e) => handleInputChange("customerName", e.target.value)}
               disabled={isLoading}
@@ -49,10 +49,10 @@ export function InvoiceFiltersBar({ filters, onFilterChange, onClearFilters, isL
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="invoiceNumber">Invoice Number</Label>
+            <Label htmlFor="invoiceNumber">מספר חשבונית</Label>
             <Input
               id="invoiceNumber"
-              placeholder="e.g. INV-001"
+              placeholder="לדוגמה: 12345"
               value={filters.invoiceNumber}
               onChange={(e) => handleInputChange("invoiceNumber", e.target.value)}
               disabled={isLoading}
@@ -60,38 +60,38 @@ export function InvoiceFiltersBar({ filters, onFilterChange, onClearFilters, isL
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="startDate">Start Date (CURDATE)</Label>
+            <Label htmlFor="startDate">תאריך התחלה (ת.ערך)</Label>
             <DatePicker
               date={filters.startDate}
               setDate={(date) => handleInputChange("startDate", date)}
-              placeholder="Select start date"
+              placeholder="בחר תאריך התחלה"
               className="bg-background"
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="endDate">End Date (CURDATE)</Label>
+            <Label htmlFor="endDate">תאריך סיום (ת.ערך)</Label>
             <DatePicker
               date={filters.endDate}
               setDate={(date) => handleInputChange("endDate", date)}
-              placeholder="Select end date"
+              placeholder="בחר תאריך סיום"
               className="bg-background"
             />
           </div>
            <div className="space-y-1">
-            <Label htmlFor="fncStartDate">Start Date (FNCDATE)</Label>
+            <Label htmlFor="fncStartDate">תאריך התחלה (ת.פרעון)</Label>
             <DatePicker
               date={filters.fncStartDate}
               setDate={(date) => handleInputChange("fncStartDate", date)}
-              placeholder="Select start date"
+              placeholder="בחר תאריך התחלה"
               className="bg-background"
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="fncEndDate">End Date (FNCDATE)</Label>
+            <Label htmlFor="fncEndDate">תאריך סיום (ת.פרעון)</Label>
             <DatePicker
               date={filters.fncEndDate}
               setDate={(date) => handleInputChange("fncEndDate", date)}
-              placeholder="Select end date"
+              placeholder="בחר תאריך סיום"
               className="bg-background"
             />
           </div>
@@ -100,7 +100,7 @@ export function InvoiceFiltersBar({ filters, onFilterChange, onClearFilters, isL
       <CardFooter>
         <Button onClick={onClearFilters} variant="outline" disabled={isLoading} className="ml-auto">
           <XCircle className="mr-2 h-4 w-4" />
-          Clear Filters
+          נקה סינונים
         </Button>
       </CardFooter>
     </Card>

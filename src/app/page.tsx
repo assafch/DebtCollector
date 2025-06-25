@@ -28,11 +28,11 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 
 const menuItems: MenuItemType[] = [
-  { name: 'Dashboard', iconName: 'LayoutDashboard', path: '/' },
-  { name: 'Invoices', iconName: 'FileText', path: '/invoices' },
-  { name: 'Customers', iconName: 'Users', path: '/customers' },
-  { name: 'Phonebook', iconName: 'PhoneCall', path: '/phonebook' },
-  { name: 'Settings', iconName: 'SettingsIcon', path: '/settings' },
+  { name: 'לוח בקרה', iconName: 'LayoutDashboard', path: '/' },
+  { name: 'חשבוניות', iconName: 'FileText', path: '/invoices' },
+  { name: 'לקוחות', iconName: 'Users', path: '/customers' },
+  { name: 'ספר טלפונים', iconName: 'PhoneCall', path: '/phonebook' },
+  { name: 'הגדרות', iconName: 'SettingsIcon', path: '/settings' },
 ];
 
 const formatCurrency = (amount: number): string => {
